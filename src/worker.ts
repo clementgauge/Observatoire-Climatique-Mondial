@@ -6,89 +6,133 @@ export interface Env {
 
 function buildSitemapXml(origin: string): string {
   const cleanOrigin = origin.replace(/\/+$/, '');
-  const urls = [
-    `${cleanOrigin}/`,
-    `${cleanOrigin}/en`,
-    `${cleanOrigin}/?country=France`,
-    `${cleanOrigin}/en?country=France`,
-    `${cleanOrigin}/?country=USA`,
-    `${cleanOrigin}/en?country=USA`,
-    `${cleanOrigin}/?country=China`,
-    `${cleanOrigin}/?country=Brazil`,
-    `${cleanOrigin}/?country=Germany`,
-    `${cleanOrigin}/?country=Canada`,
-    `${cleanOrigin}/?country=Switzerland`,
-    `${cleanOrigin}/?country=Morocco`,
-    `${cleanOrigin}/?country=Belgium`,
-    `${cleanOrigin}/?country=Spain`,
-    `${cleanOrigin}/?country=Italy`,
-    `${cleanOrigin}/?country=Japan`,
-    `${cleanOrigin}/?country=India`
-  ];
+  const today = new Date().toISOString().split('T')[0];
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${cleanOrigin}/</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${cleanOrigin}/en</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`;
+}
 
-  const entries = urls
-    .map(
-      (loc) => `  <url>\n    <loc>${loc}</loc>\n  </url>`
-    )
-    .join('\n');
-
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>`;
+function buildSitemapTxt(origin: string): string {
+  const cleanOrigin = origin.replace(/\/+$/, '');
+  return `${cleanOrigin}/\n${cleanOrigin}/en\n`;
 }
 
 function buildRobotsTxt(origin: string): string {
   const cleanOrigin = origin.replace(/\/+$/, '');
-  return `User-agent: *\nAllow: /\nAllow: /en\nAllow: /sitemap.xml\n\nSitemap: ${cleanOrigin}/sitemap.xml\n`;
+  return `User-agent: *
+Allow: /
+Allow: /en
+Allow: /sitemap.xml
+Allow: /sitemap-main.xml
+Allow: /sitemap.txt
+
+Sitemap: ${cleanOrigin}/sitemap.xml
+Sitemap: ${cleanOrigin}/sitemap-main.xml
+Sitemap: ${cleanOrigin}/sitemap.txt
+`;
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const origin = url.origin;
-    const pathname = url.pathname.replace(/\/+$/, '') || '/';
+    const pathname = (url.pathname.replace(/\/+$/, '') || '/').toLowerCase();
 
-    // 1. Dynamic Sitemap XML matching the exact active domain (workers.dev subdomain or custom domain)
+    // 1. Dynamic XML Sitemaps (supports /sitemap.xml, /sitemap-main.xml, /sitemap2.xml, /sitemap_index.xml)
     if (
       pathname === '/sitemap.xml' ||
+      pathname === '/sitemap-main.xml' ||
+      pathname === '/sitemap2.xml' ||
       pathname === '/sitemap_index.xml' ||
+      pathname === '/sitemap-index.xml' ||
       pathname === '/sitemap'
     ) {
       const xml = buildSitemapXml(origin);
-      return new Response(xml, {
+      return new Response(request.method === 'HEAD' ? null : xml, {
         status: 200,
         headers: {
           'Content-Type': 'application/xml; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600',
-          'Access-Control-Allow-Origin': '*',
-          'X-Content-Type-Options': 'nosniff'
-        }
-      });
-    }
-
-    // 2. Dynamic robots.txt pointing to the exact active domain's sitemap.xml
-    if (pathname === '/robots.txt') {
-      const robots = buildRobotsTxt(origin);
-      return new Response(robots, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'X-Robots-Tag': 'all',
           'Access-Control-Allow-Origin': '*'
         }
       });
     }
 
-    // 3. Permanent Google Search Console HTML verification file
-    if (pathname === '/google1c5f3169018b1d05.html') {
-      return new Response('google-site-verification: google1c5f3169018b1d05.html', {
+    // 2. Dynamic Plain-Text Sitemap (/sitemap.txt) — 100% Google Search Console native format
+    if (pathname === '/sitemap.txt') {
+      const txt = buildSitemapTxt(origin);
+      return new Response(request.method === 'HEAD' ? null : txt, {
         status: 200,
         headers: {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, max-age=3600'
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'X-Robots-Tag': 'all',
+          'Access-Control-Allow-Origin': '*'
         }
       });
     }
 
-    // 4. Serve static assets from ./dist
-    return env.ASSETS.fetch(request);
+    // 3. Dynamic robots.txt with exact domain
+    if (pathname === '/robots.txt') {
+      const robots = buildRobotsTxt(origin);
+      return new Response(request.method === 'HEAD' ? null : robots, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
+    // 4. Permanent Google Search Console verification file
+    if (pathname === '/google1c5f3169018b1d05.html') {
+      return new Response(
+        request.method === 'HEAD'
+          ? null
+          : 'google-site-verification: google1c5f3169018b1d05.html',
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'public, max-age=3600'
+          }
+        }
+      );
+    }
+
+    // 5. Serve /en and /en/ directly with 200 OK (no 307/308 redirect)
+    if (pathname === '/en') {
+      const enUrl = new URL('/en/index.html', request.url);
+      const enRes = await env.ASSETS.fetch(new Request(enUrl.toString(), request));
+      if (enRes.ok) {
+        return new Response(enRes.body, {
+          status: 200,
+          headers: enRes.headers
+        });
+      }
+    }
+
+    // 6. Serve static assets from ./dist, with SPA fallback to /index.html on 404
+    const assetResponse = await env.ASSETS.fetch(request);
+    if (assetResponse.status === 404) {
+      const indexUrl = new URL('/index.html', request.url);
+      return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+    }
+
+    return assetResponse;
   }
 };
