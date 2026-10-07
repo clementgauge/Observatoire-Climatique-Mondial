@@ -5,6 +5,7 @@ import {
   COUNTRY_EMISSION_PROFILES,
   Language
 } from '../data/climateDatasets';
+import { CountryFullDossier } from '../data/countryFullDossiers';
 import {
   LiveAtmosphericMetrics,
   LiveStationTelemetry
@@ -15,6 +16,7 @@ export interface PdfExportOptions {
   atmospheric: LiveAtmosphericMetrics;
   activeStationTelemetry: LiveStationTelemetry | null;
   tonnesEmittedSession: number;
+  selectedCountry?: CountryFullDossier | null;
 }
 
 /**
@@ -50,7 +52,8 @@ export function generateClimatePdfReport({
   lang,
   atmospheric,
   activeStationTelemetry,
-  tonnesEmittedSession
+  tonnesEmittedSession,
+  selectedCountry
 }: PdfExportOptions): void {
   const isEn = lang === 'en';
   const doc = new jsPDF({
@@ -72,16 +75,16 @@ export function generateClimatePdfReport({
 
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.text(
-    sanitizePdfText(
-      isEn
-        ? 'GLOBAL CLIMATE OBSERVATORY - SCIENTIFIC REPORT'
-        : 'OBSERVATOIRE CLIMATIQUE MONDIAL - RAPPORT SCIENTIFIQUE'
-    ),
-    14,
-    14
-  );
+  doc.setFontSize(14);
+  const reportTitle = selectedCountry
+    ? isEn
+      ? `CLIMATE & BIODIVERSITY DOSSIER: ${selectedCountry.nameEn.toUpperCase()} (${selectedCountry.iso3})`
+      : `DOSSIER CLIMAT & BIODIVERSITE : ${selectedCountry.nameFr.toUpperCase()} (${selectedCountry.iso3})`
+    : isEn
+    ? 'GLOBAL CLIMATE OBSERVATORY - SCIENTIFIC REPORT'
+    : 'OBSERVATOIRE CLIMATIQUE MONDIAL - RAPPORT SCIENTIFIQUE';
+
+  doc.text(sanitizePdfText(reportTitle), 14, 14);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
@@ -468,6 +471,80 @@ export function generateClimatePdfReport({
     margin: { left: 14, right: 14 }
   });
 
+  if (selectedCountry) {
+    doc.addPage();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text(
+      sanitizePdfText(
+        isEn
+          ? `7. National Climate, Biodiversity & Policy Dossier: ${selectedCountry.nameEn} (${selectedCountry.iso3})`
+          : `7. Dossier National Complet (Climat, WWF & Lois) : ${selectedCountry.nameFr} (${selectedCountry.iso3})`
+      ),
+      14,
+      18
+    );
+
+    const sectorsSummary = selectedCountry.sectors
+      .map((s) => sanitizePdfText(`• ${isEn ? s.sectorEn : s.sectorFr} (${s.sharePercent.toFixed(1)}%)`))
+      .join('\n');
+
+    const wwfSummary = (isEn ? selectedCountry.wwfSpeciesAndActionsEn : selectedCountry.wwfSpeciesAndActionsFr)
+      .map((w) => sanitizePdfText(`• ${w.title} [${w.species}] : ${w.action}`))
+      .join('\n');
+
+    const lawsSummary = (isEn ? selectedCountry.keyLawsAndMeasuresEn : selectedCountry.keyLawsAndMeasuresFr)
+      .map((l) => sanitizePdfText(`• ${l}`))
+      .join('\n');
+
+    autoTable(doc, {
+      startY: 22,
+      tableWidth: 182,
+      head: [
+        isEn
+          ? ['National Dimension', 'Verified Metric / Target', 'Detailed Scientific & Policy Breakdown']
+          : ['Dimension Nationale', 'Indicateur Vérifié / Cible', 'Analyse Scientifique, Biodiversité WWF & Mesures']
+      ],
+      body: [
+        [
+          isEn ? 'GHG Emissions & Footprint' : 'Émissions de GES & Empreinte',
+          sanitizePdfText(
+            `${selectedCountry.annualMtCO2e} MtCO2e/yr\n${selectedCountry.perCapitaTonnes.toFixed(2)} tCO2/cap\n(${selectedCountry.evolutionSince1990Percent >= 0 ? '+' : ''}${selectedCountry.evolutionSince1990Percent.toFixed(1)}% vs 1990)`
+          ),
+          sectorsSummary
+        ],
+        [
+          isEn ? 'Electricity & Forest Sink' : 'Électricité & Forêts',
+          sanitizePdfText(
+            `Low-Carbon Elec: ${selectedCountry.lowCarbonElectricityPercent.toFixed(1)}%\nRenewables: ${selectedCountry.renewableSharePercent.toFixed(1)}%\nForests: ${selectedCountry.forestCoverPercent.toFixed(1)}%`
+          ),
+          sanitizePdfText(isEn ? selectedCountry.forestTrendEn : selectedCountry.forestTrendFr)
+        ],
+        [
+          isEn ? 'WWF Wildlife & Biomes' : 'Actions WWF & Faune Sauvage',
+          sanitizePdfText(`Temp Anomaly:\n+${selectedCountry.nationalTempAnomalyC.toFixed(2)} °C`),
+          wwfSummary
+        ],
+        [
+          isEn ? 'National Laws & Policies' : 'Lois & Politiques Publiques',
+          sanitizePdfText(`Net-Zero: ${selectedCountry.netZeroTargetYear}\n${isEn ? selectedCountry.target2030En : selectedCountry.target2030Fr}`),
+          lawsSummary
+        ]
+      ],
+      theme: 'grid',
+      styles: { overflow: 'linebreak', cellPadding: 3, fontSize: 8 },
+      headStyles: { fillColor: [5, 150, 105], textColor: 255, fontSize: 8.5 },
+      bodyStyles: { textColor: [30, 41, 59] },
+      columnStyles: {
+        0: { cellWidth: 42, fontStyle: 'bold' },
+        1: { cellWidth: 42 },
+        2: { cellWidth: 98 }
+      },
+      margin: { left: 14, right: 14 }
+    });
+  }
+
   // Footer on all pages
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
@@ -485,9 +562,10 @@ export function generateClimatePdfReport({
     );
   }
 
+  const countrySlug = selectedCountry ? `-${selectedCountry.iso3.toLowerCase()}` : '';
   const filename = isEn
-    ? `global-climate-observatory-report-${new Date().toISOString().slice(0, 10)}.pdf`
-    : `observatoire-climatique-rapport-${new Date().toISOString().slice(0, 10)}.pdf`;
+    ? `global-climate-observatory-report${countrySlug}-${new Date().toISOString().slice(0, 10)}.pdf`
+    : `observatoire-climatique-rapport${countrySlug}-${new Date().toISOString().slice(0, 10)}.pdf`;
 
   doc.save(filename);
 }

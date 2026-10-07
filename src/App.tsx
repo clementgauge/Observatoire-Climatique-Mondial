@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   fetchAtmosphericTelemetry,
   LiveAtmosphericMetrics,
-  LiveStationTelemetry
+  LiveStationTelemetry,
+  resolveDynamicCountryBySearch
 } from './services/climateApiService';
 import { generateClimatePdfReport } from './services/pdfReportGenerator';
 import { HistoricalCorrelationChart } from './components/HistoricalCorrelationChart';
@@ -19,7 +20,13 @@ import { PlanetaryBoundariesRadarSection } from './components/PlanetaryBoundarie
 import { TrajectorySimulator2100 } from './components/TrajectorySimulator2100';
 import { SeoClimateKnowledgeBaseSection } from './components/SeoClimateKnowledgeBaseSection';
 import { ScientificMethodologySection } from './components/ScientificMethodologySection';
-import { RefreshCw, ArrowDownRight, FileText, Menu, X, ExternalLink } from 'lucide-react';
+import { CountrySearchDossierView } from './components/CountrySearchDossierView';
+import {
+  ALL_COUNTRY_DOSSIERS,
+  CountryFullDossier,
+  searchCountryDossiers
+} from './data/countryFullDossiers';
+import { RefreshCw, ArrowDownRight, FileText, Menu, X, ExternalLink, Search, Globe } from 'lucide-react';
 import { Language } from './data/climateDatasets';
 
 function detectInitialLanguage(): Language {
@@ -58,7 +65,75 @@ export default function App() {
   const [syncing, setSyncing] = useState<boolean>(true);
   const [tonnesEmittedSession, setTonnesEmittedSession] = useState<number>(0);
 
+  // Country Search State: empty string = Global View; typed country = Country Dossier View
+  const [countryQuery, setCountryQuery] = useState<string>('');
+  const [selectedOverrideCountry, setSelectedOverrideCountry] =
+    useState<CountryFullDossier | null>(null);
+  const [dynamicResolvedCountry, setDynamicResolvedCountry] =
+    useState<CountryFullDossier | null>(null);
+  const [resolvingDynamic, setResolvingDynamic] = useState<boolean>(false);
+
   const isEn = lang === 'en';
+
+  // Local catalog matches for the current search query
+  const matchingCatalogCountries = useMemo(() => {
+    return searchCountryDossiers(countryQuery);
+  }, [countryQuery]);
+
+  // If user types a country not in the 28 curated dossiers, resolve it live via Open-Meteo Geocoding + World Bank API
+  useEffect(() => {
+    const trimmed = countryQuery.trim();
+    if (!trimmed) {
+      setSelectedOverrideCountry(null);
+      setDynamicResolvedCountry(null);
+      setResolvingDynamic(false);
+      return;
+    }
+
+    if (matchingCatalogCountries.length > 0) {
+      setDynamicResolvedCountry(null);
+      setResolvingDynamic(false);
+      return;
+    }
+
+    if (trimmed.length < 3) return;
+
+    let cancelled = false;
+    setResolvingDynamic(true);
+    const timer = setTimeout(async () => {
+      const resolved = await resolveDynamicCountryBySearch(trimmed, lang);
+      if (!cancelled) {
+        setDynamicResolvedCountry(resolved);
+        setResolvingDynamic(false);
+      }
+    }, 380);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [countryQuery, matchingCatalogCountries, lang]);
+
+  // Determine the currently active country dossier (if any)
+  const activeCountryDossier: CountryFullDossier | null = useMemo(() => {
+    if (!countryQuery.trim()) return null;
+    if (selectedOverrideCountry) return selectedOverrideCountry;
+    if (matchingCatalogCountries.length > 0) return matchingCatalogCountries[0];
+    if (dynamicResolvedCountry) return dynamicResolvedCountry;
+    return null;
+  }, [countryQuery, selectedOverrideCountry, matchingCatalogCountries, dynamicResolvedCountry]);
+
+  const handleClearCountrySearch = () => {
+    setCountryQuery('');
+    setSelectedOverrideCountry(null);
+    setDynamicResolvedCountry(null);
+  };
+
+  const handleQuickSelectCountry = (c: CountryFullDossier) => {
+    setSelectedOverrideCountry(c);
+    setCountryQuery(isEn ? c.nameEn : c.nameFr);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Dynamically resolve the real active domain (e.g. Cloudflare workers.dev or custom domain)
   useEffect(() => {
@@ -160,12 +235,21 @@ export default function App() {
       lang,
       atmospheric,
       activeStationTelemetry,
-      tonnesEmittedSession
+      tonnesEmittedSession,
+      selectedCountry: activeCountryDossier
     });
   };
 
   const co2AnnualDelta = (atmospheric.co2Ppm - atmospheric.co2YearAgoPpm).toFixed(2);
   const ch4AnnualDelta = (atmospheric.ch4Ppb - atmospheric.ch4YearAgoPpb).toFixed(1);
+
+  const quickCountries = useMemo(
+    () =>
+      ['FRA', 'USA', 'CHN', 'BRA', 'DEU', 'CAN', 'MAR', 'CHE', 'COD', 'IND']
+        .map((iso) => ALL_COUNTRY_DOSSIERS.find((c) => c.iso3 === iso))
+        .filter((c): c is CountryFullDossier => Boolean(c)),
+    []
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900">
@@ -177,6 +261,7 @@ export default function App() {
             href={isEn ? '/en' : '/'}
             onClick={(e) => {
               e.preventDefault();
+              handleClearCountrySearch();
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="text-lg sm:text-xl lg:text-2xl font-display tracking-tight text-slate-900 whitespace-nowrap truncate"
@@ -191,36 +276,42 @@ export default function App() {
           >
             <a
               href="#observatoire"
+              onClick={() => handleClearCountrySearch()}
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
               {isEn ? 'Telemetry' : 'Télémesure'}
             </a>
             <a
               href="#causes-mondiales"
+              onClick={() => handleClearCountrySearch()}
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
               {isEn ? 'Causes by Sector' : 'Causes par Secteur'}
             </a>
             <a
               href="#atlas-pays"
+              onClick={() => handleClearCountrySearch()}
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
               {isEn ? 'Country Atlas' : 'Atlas des Pays'}
             </a>
             <a
               href="#deforestation-wwf-actions"
+              onClick={() => handleClearCountrySearch()}
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
               {isEn ? 'Deforestation, WWF & Laws' : 'Déforestation, WWF & Lois'}
             </a>
             <a
               href="#analyse-europa-wwf"
+              onClick={() => handleClearCountrySearch()}
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
               {isEn ? 'Europa.eu & Biosphere' : 'Europa.eu & Biosphère'}
             </a>
             <a
               href="#sources-scientifiques"
+              onClick={() => handleClearCountrySearch()}
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
               {isEn ? 'Sources & APIs' : 'Sources & APIs'}
@@ -292,42 +383,60 @@ export default function App() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <a
                 href="#observatoire"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  handleClearCountrySearch();
+                  setMobileMenuOpen(false);
+                }}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
                 {isEn ? '01. Telemetry' : '01. Télémesure'}
               </a>
               <a
                 href="#causes-mondiales"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  handleClearCountrySearch();
+                  setMobileMenuOpen(false);
+                }}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
                 {isEn ? '02. Causes by Sector' : '02. Causes par Secteur'}
               </a>
               <a
                 href="#atlas-pays"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  handleClearCountrySearch();
+                  setMobileMenuOpen(false);
+                }}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
                 {isEn ? '03. Country Atlas' : '03. Atlas des Pays'}
               </a>
               <a
                 href="#stations-temps-reel"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  handleClearCountrySearch();
+                  setMobileMenuOpen(false);
+                }}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
                 {isEn ? '04. Live Sensors' : '04. Capteurs Direct'}
               </a>
               <a
                 href="#deforestation-wwf-actions"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  handleClearCountrySearch();
+                  setMobileMenuOpen(false);
+                }}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
                 {isEn ? '05. Deforestation & WWF' : '05. Déforestation & WWF'}
               </a>
               <a
                 href="#sources-scientifiques"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  handleClearCountrySearch();
+                  setMobileMenuOpen(false);
+                }}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
                 {isEn ? '06. Sources & APIs' : '06. Sources & APIs'}
@@ -348,9 +457,135 @@ export default function App() {
         )}
       </header>
 
-      {/* Hero Section & Live Telemetry Command Deck */}
+      {/* Country Intelligence Search Bar Deck — Always accessible at the top */}
+      <div className="bg-white border-b border-slate-200 py-4 px-4 sm:px-6 lg:px-8 shadow-2xs">
+        <div className="max-w-[1360px] mx-auto">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            {/* Search Input Box */}
+            <div className="relative flex-1 max-w-2xl">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="search"
+                value={countryQuery}
+                onChange={(e) => {
+                  setSelectedOverrideCountry(null);
+                  setCountryQuery(e.target.value);
+                }}
+                placeholder={
+                  isEn
+                    ? 'Search a country (e.g., France, Brazil, USA, Morocco, Switzerland, Canada...) — Leave empty for Global View'
+                    : 'Rechercher un pays (ex : France, Brésil, États-Unis, Maroc, Suisse, Canada...) — Laissez vide pour la vue mondiale'
+                }
+                aria-label={
+                  isEn
+                    ? 'Search any country for its complete climate dossier'
+                    : 'Rechercher un pays pour afficher toutes ses informations climatiques'
+                }
+                className="w-full pl-10 pr-28 py-2.5 bg-[#F8FAFC] border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white transition-colors"
+              />
+              {countryQuery.trim().length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearCountrySearch}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-mono-tabular font-medium rounded-md hover:bg-slate-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                  <span>{isEn ? 'Global View' : 'Vue Mondiale'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Quick Country Filter Chips + World View Button */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
+              <button
+                type="button"
+                onClick={handleClearCountrySearch}
+                className={`px-2.5 py-1.5 text-xs font-mono-tabular rounded-md border whitespace-nowrap inline-flex items-center gap-1 transition-colors cursor-pointer ${
+                  !countryQuery.trim()
+                    ? 'bg-slate-900 text-white border-slate-900 font-semibold'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <Globe className="w-3 h-3" />
+                <span>{isEn ? 'Global (Default)' : 'Monde (Général)'}</span>
+              </button>
+
+              {quickCountries.map((c) => {
+                const isSelected = activeCountryDossier?.iso3 === c.iso3 && countryQuery.trim().length > 0;
+                return (
+                  <button
+                    key={c.iso3}
+                    type="button"
+                    onClick={() => handleQuickSelectCountry(c)}
+                    className={`px-2.5 py-1.5 text-xs font-mono-tabular rounded-md border whitespace-nowrap transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-emerald-700 text-white border-emerald-700 font-semibold'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {isEn ? c.nameEn : c.nameFr}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content: Conditional Country Dossier View OR Full Global Observatory View */}
       <main className="flex-1">
-        <section id="observatoire" className="pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-16 lg:pb-20">
+        {countryQuery.trim().length > 0 ? (
+          activeCountryDossier ? (
+            <CountrySearchDossierView
+              country={activeCountryDossier}
+              matchingCountries={matchingCatalogCountries}
+              onSelectCountry={(c) => {
+                setSelectedOverrideCountry(c);
+                setCountryQuery(isEn ? c.nameEn : c.nameFr);
+              }}
+              onClearSearch={handleClearCountrySearch}
+              onExportCountryPdf={handleExportPdf}
+              lang={lang}
+            />
+          ) : (
+            <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
+              <div className="bg-white border border-slate-200 p-8 text-center max-w-xl mx-auto">
+                <div className="text-xs font-mono-tabular uppercase text-amber-700">
+                  {resolvingDynamic
+                    ? isEn
+                      ? 'QUERYING PUBLIC WORLD BANK & OPEN-METEO GEOCODING API...'
+                      : 'INTERROGATION EN DIRECT DES APIS BANQUE MONDIALE & OPEN-METEO...'
+                    : isEn
+                    ? 'COUNTRY SEARCH'
+                    : 'RECHERCHE DE PAYS'}
+                </div>
+                <h2 className="text-2xl font-display text-slate-900 mt-2">
+                  {resolvingDynamic
+                    ? isEn
+                      ? `Loading live national data for "${countryQuery}"...`
+                      : `Chargement des données nationales en direct pour « ${countryQuery} »...`
+                    : isEn
+                    ? `No country found matching "${countryQuery}"`
+                    : `Aucun pays trouvé pour « ${countryQuery} »`}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-600 mt-2">
+                  {isEn
+                    ? 'Try typing France, Brazil, United States, China, Germany, Canada, Morocco, Switzerland, Spain, Italy, Japan, or clear the search bar to return to the global observatory.'
+                    : 'Essayez de taper France, Brésil, États-Unis, Chine, Allemagne, Canada, Maroc, Suisse, Espagne, Italie, Japon, ou videz la barre de recherche pour revenir au site général.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleClearCountrySearch}
+                  className="mt-5 px-4 py-2 bg-slate-900 text-white text-xs font-medium rounded-lg hover:bg-slate-800 cursor-pointer"
+                >
+                  {isEn ? 'Return to Global View' : 'Revenir aux informations générales (Monde)'}
+                </button>
+              </div>
+            </div>
+          )
+        ) : (
+          <>
+            <section id="observatoire" className="pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-16 lg:pb-20">
           <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
             {/* Quiet Unboxed Editorial Metadata with Explicit Institutional Attribution */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-slate-200 text-xs text-slate-500">
@@ -592,6 +827,8 @@ export default function App() {
           lang={lang}
           channels={atmospheric.channels}
         />
+          </>
+        )}
       </main>
 
       {/* Quiet Institutional Footer with Direct Crawlable Bilingual Links & PDF Export */}
