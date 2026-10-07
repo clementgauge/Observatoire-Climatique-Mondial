@@ -1,9 +1,70 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="14" fill="#0F172A"/>
-  <circle cx="32" cy="32" r="20" stroke="#10B981" stroke-width="3"/>
-  <ellipse cx="32" cy="32" rx="10" ry="20" stroke="#38BDF8" stroke-width="2"/>
-  <line x1="12" y1="32" x2="52" y2="32" stroke="#38BDF8" stroke-width="2"/>
-  <line x1="15" y1="22" x2="49" y2="22" stroke="#38BDF8" stroke-width="1.5" stroke-dasharray="2 2"/>
-  <line x1="15" y1="42" x2="49" y2="42" stroke="#38BDF8" stroke-width="1.5" stroke-dasharray="2 2"/>
-  <circle cx="44" cy="20" r="5" fill="#F59E0B"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="64" height="64" fill="none">
+  <defs>
+    <radialGradient id="oceanGrad" cx="42%" cy="24%" r="68%" fx="42%" fy="24%">
+      <stop offset="0%" stop-color="#18D2FF"/>
+      <stop offset="32%" stop-color="#0088E0"/>
+      <stop offset="72%" stop-color="#0048A8"/>
+      <stop offset="100%" stop-color="#00266B"/>
+    </radialGradient>
+    <linearGradient id="continentGrad" x1="25%" y1="12%" x2="65%" y2="85%">
+      <stop offset="0%" stop-color="#B8F542"/>
+      <stop offset="45%" stop-color="#5CD62B"/>
+      <stop offset="100%" stop-color="#1E9E38"/>
+    </linearGradient>
+    <linearGradient id="leafMainGrad" x1="12%" y1="28%" x2="62%" y2="92%">
+      <stop offset="0%" stop-color="#7AE51D"/>
+      <stop offset="40%" stop-color="#229A2B"/>
+      <stop offset="78%" stop-color="#075928"/>
+      <stop offset="100%" stop-color="#48B81E"/>
+    </linearGradient>
+    <linearGradient id="arcGrad" x1="40%" y1="8%" x2="82%" y2="35%">
+      <stop offset="0%" stop-color="#FFB100"/>
+      <stop offset="60%" stop-color="#FF6D00"/>
+      <stop offset="100%" stop-color="#FF3D00"/>
+    </linearGradient>
+    <linearGradient id="thermoGrad" x1="50%" y1="25%" x2="55%" y2="78%">
+      <stop offset="0%" stop-color="#FFA200"/>
+      <stop offset="50%" stop-color="#FF4D00"/>
+      <stop offset="85%" stop-color="#F01414"/>
+      <stop offset="100%" stop-color="#D90416"/>
+    </linearGradient>
+    <linearGradient id="blueWaveGrad" x1="45%" y1="82%" x2="92%" y2="56%">
+      <stop offset="0%" stop-color="#004C9E"/>
+      <stop offset="55%" stop-color="#007CD6"/>
+      <stop offset="100%" stop-color="#00A8F3"/>
+    </linearGradient>
+    <linearGradient id="barGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#00AEFF"/>
+      <stop offset="60%" stop-color="#0068C4"/>
+      <stop offset="100%" stop-color="#003E85"/>
+    </linearGradient>
+    <clipPath id="globeClip">
+      <circle cx="236" cy="234" r="154"/>
+    </clipPath>
+  </defs>
+  <path d="M 212 63 C 288 48, 360 78, 395 136 L 372 146 C 340 94, 278 65, 212 63 Z" fill="url(#arcGrad)"/>
+  <g clip-path="url(#globeClip)">
+    <circle cx="236" cy="234" r="154" fill="url(#oceanGrad)"/>
+    <path d="M 192 92 C 206 84, 232 86, 238 98 C 242 112, 224 134, 208 136 C 196 136, 188 110, 192 92 Z" fill="url(#continentGrad)"/>
+    <path d="M 96 145 C 115 118, 152 104, 178 114 C 186 126, 170 144, 184 156 C 195 165, 188 184, 174 192 C 158 202, 152 218, 142 232 C 132 242, 136 258, 150 268 L 138 275 C 118 262, 102 238, 92 212 C 86 190, 88 164, 96 145 Z" fill="url(#continentGrad)"/>
+    <path d="M 152 272 C 172 268, 198 282, 214 300 C 228 316, 218 344, 204 368 C 190 382, 170 370, 162 346 C 154 322, 144 290, 152 272 Z" fill="url(#continentGrad)"/>
+    <path d="M 272 135 C 292 122, 318 128, 330 148 C 342 166, 355 178, 352 198 C 338 206, 322 198, 308 206 C 294 214, 274 210, 268 196 C 264 182, 282 174, 284 160 C 284 148, 268 144, 272 135 Z" fill="url(#continentGrad)"/>
+    <path d="M 268 220 C 292 212, 324 218, 344 236 C 362 254, 368 282, 352 314 C 336 346, 318 368, 302 364 C 290 358, 292 326, 282 302 C 268 286, 246 276, 248 252 C 250 236, 258 224, 268 220 Z" fill="url(#continentGrad)"/>
+  </g>
+  <path d="M 212 384 C 276 394, 332 368, 362 326" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+  <path d="M 232 396 C 292 412, 342 382, 366 344 C 384 366, 412 364, 430 338 C 446 318, 462 306, 476 296 C 456 356, 412 404, 350 422 C 304 434, 262 418, 232 396 Z" fill="url(#blueWaveGrad)"/>
+  <path d="M 74 164 C 66 226, 102 268, 154 298 C 194 322, 206 364, 224 402 C 258 432, 326 444, 398 404 C 350 454, 276 468, 214 434 C 154 400, 114 344, 92 284 C 72 238, 66 196, 74 164 Z" fill="url(#leafMainGrad)"/>
+  <path d="M 70 168 C 34 246, 42 346, 106 406 C 148 444, 202 456, 246 460 C 196 426, 152 384, 126 336 C 154 364, 188 394, 226 414 C 204 374, 194 328, 156 298 C 106 264, 72 222, 70 168 Z" fill="url(#leafMainGrad)"/>
+  <path d="M 72 246 C 98 318, 152 382, 244 446" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+  <rect x="412" y="268" width="14" height="36" rx="3" fill="url(#barGrad)"/>
+  <rect x="430" y="246" width="14" height="58" rx="3" fill="url(#barGrad)"/>
+  <rect x="448" y="226" width="14" height="74" rx="3" fill="url(#barGrad)"/>
+  <rect x="466" y="206" width="16" height="86" rx="3" fill="url(#barGrad)"/>
+  <path d="M 366 158 C 366 142, 378 130, 392 130 C 406 130, 418 142, 418 158 L 418 272 C 430 282, 438 298, 438 316 C 438 346, 414 370, 386 370 C 358 370, 334 346, 334 316 C 334 298, 342 282, 354 272 L 354 158 Z" fill="#FFFFFF"/>
+  <path d="M 374 160 C 374 150, 381 142, 390 142 C 399 142, 406 150, 406 160 L 406 278 C 418 286, 424 300, 424 316 C 424 338, 407 356, 386 356 C 365 356, 348 338, 348 316 C 348 300, 356 286, 368 278 L 374 160 Z" fill="url(#thermoGrad)"/>
+  <rect x="414" y="158" width="18" height="7" rx="3.5" fill="#FF8500"/>
+  <rect x="414" y="176" width="18" height="7" rx="3.5" fill="#FF6600"/>
+  <rect x="414" y="194" width="18" height="7" rx="3.5" fill="#FF4400"/>
+  <rect x="414" y="212" width="18" height="7" rx="3.5" fill="#F02400"/>
+  <rect x="414" y="230" width="18" height="7" rx="3.5" fill="#D90416"/>
 </svg>

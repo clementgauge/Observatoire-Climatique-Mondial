@@ -392,7 +392,7 @@ export default function App() {
       {/* Strict 3-Zone Top Navigation Bar Contract — Responsive for Desktop & Mobile */}
       <header className="sticky top-0 z-40 bg-[#F8FAFC]/95 backdrop-blur-xs border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-3.5">
         <div className="max-w-[1360px] mx-auto flex items-center justify-between gap-3">
-          {/* Zone 1: Single Text Element Brand Wordmark */}
+          {/* Zone 1: Brand Logo + Wordmark */}
           <a
             href={isEn ? '/en' : '/'}
             onClick={(e) => {
@@ -400,9 +400,18 @@ export default function App() {
               handleClearCountrySearch();
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="text-lg sm:text-xl lg:text-2xl font-display tracking-tight text-slate-900 whitespace-nowrap truncate"
+            className="flex items-center gap-2.5 text-lg sm:text-xl lg:text-2xl font-display tracking-tight text-slate-900 whitespace-nowrap truncate"
           >
-            {isEn ? 'Global Climate Observatory' : 'Observatoire Climatique Mondial'}
+            <img
+              src="/logo.svg"
+              alt={isEn ? 'Global Climate Observatory Logo' : 'Logo Observatoire Climatique Mondial'}
+              width={36}
+              height={36}
+              className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 object-contain"
+            />
+            <span className="truncate">
+              {isEn ? 'Global Climate Observatory' : 'Observatoire Climatique Mondial'}
+            </span>
           </a>
 
           {/* Zone 2: 6 Clean Text Navigation Links (Desktop) */}
@@ -971,10 +980,19 @@ export default function App() {
       <footer className="border-t border-slate-200 bg-white py-10 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1360px] mx-auto flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 text-xs text-slate-500">
           <div className="max-w-2xl">
-            <div className="font-display text-lg text-slate-900">
-              {isEn
-                ? 'Global Climate Observatory — Scientific Data, Biodiversity & Telemetry'
-                : 'Observatoire Climatique Mondial — Climat, Déforestation, Biodiversité & Télémesure'}
+            <div className="flex items-center gap-2.5 font-display text-lg text-slate-900">
+              <img
+                src="/logo.svg"
+                alt={isEn ? 'Global Climate Observatory Logo' : 'Logo Observatoire Climatique Mondial'}
+                width={28}
+                height={28}
+                className="w-7 h-7 shrink-0 object-contain"
+              />
+              <span>
+                {isEn
+                  ? 'Global Climate Observatory — Scientific Data, Biodiversity & Telemetry'
+                  : 'Observatoire Climatique Mondial — Climat, Déforestation, Biodiversité & Télémesure'}
+              </span>
             </div>
             <p className="mt-1 leading-relaxed">
               {isEn
