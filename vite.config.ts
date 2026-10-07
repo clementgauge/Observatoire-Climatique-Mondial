@@ -4,18 +4,20 @@ import path from 'path';
 import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
+  const rootDir = import.meta.dirname;
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(rootDir, '.'),
       },
     },
     build: {
+      chunkSizeWarningLimit: 1200,
       rollupOptions: {
         input: {
-          main: path.resolve(__dirname, 'index.html'),
-          en: path.resolve(__dirname, 'en/index.html'),
+          main: path.resolve(rootDir, 'index.html'),
+          en: path.resolve(rootDir, 'en/index.html'),
         },
       },
     },
