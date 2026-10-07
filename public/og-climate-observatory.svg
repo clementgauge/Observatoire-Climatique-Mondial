@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#0F172A"/>
+  <rect x="40" y="40" width="1120" height="550" rx="16" fill="#1E293B" stroke="#334155" stroke-width="2"/>
+  <text x="90" y="130" fill="#10B981" font-family="monospace" font-size="22" font-weight="bold">OBSERVATOIRE CLIMATIQUE MONDIAL · GLOBAL CLIMATE OBSERVATORY</text>
+  <text x="90" y="220" fill="#F8FAFC" font-family="serif" font-size="54" font-weight="bold">Réchauffement Climatique, Déforestation,</text>
+  <text x="90" y="285" fill="#F8FAFC" font-family="serif" font-size="54" font-weight="bold">Biodiversité WWF &amp; Politiques par Pays</text>
+  <text x="90" y="355" fill="#94A3B8" font-family="sans-serif" font-size="24">Données scientifiques en temps réel : NOAA Mauna Loa · NASA GISS · Copernicus · GIEC · WWF · FAO</text>
+  <rect x="90" y="410" width="240" height="120" rx="8" fill="#0F172A" stroke="#334155"/>
+  <text x="115" y="450" fill="#94A3B8" font-family="monospace" font-size="16">CO2 ATMOSPHÉRIQUE</text>
+  <text x="115" y="500" fill="#F8FAFC" font-family="monospace" font-size="36" font-weight="bold">426.4 ppm</text>
+  <rect x="355" y="410" width="240" height="120" rx="8" fill="#0F172A" stroke="#334155"/>
+  <text x="380" y="450" fill="#94A3B8" font-family="monospace" font-size="16">ANOMALIE THERMIQUE</text>
+  <text x="380" y="500" fill="#F43F5E" font-family="monospace" font-size="36" font-weight="bold">+1.48 °C</text>
+  <rect x="620" y="410" width="240" height="120" rx="8" fill="#0F172A" stroke="#334155"/>
+  <text x="645" y="450" fill="#94A3B8" font-family="monospace" font-size="16">DÉFORESTATION FAO</text>
+  <text x="645" y="500" fill="#F59E0B" font-family="monospace" font-size="36" font-weight="bold">-10 Mha/an</text>
+  <rect x="885" y="410" width="225" height="120" rx="8" fill="#0F172A" stroke="#334155"/>
+  <text x="910" y="450" fill="#94A3B8" font-family="monospace" font-size="16">INDICE WWF IPV</text>
+  <text x="910" y="500" fill="#10B981" font-family="monospace" font-size="36" font-weight="bold">-73 %</text>
+</svg>

@@ -1,25 +1,159 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  <!-- Version Française (Racine /) -->
+  <!-- 1. Page d'accueil principale en Français (/) -->
   <url>
-    <loc>/</loc>
-    <xhtml:link rel="alternate" hreflang="fr" href="/" />
-    <xhtml:link rel="alternate" hreflang="en" href="/en" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="/" />
+    <loc>https://observatoire-climatique-mondial.workers.dev/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://observatoire-climatique-mondial.workers.dev/" />
     <lastmod>2026-10-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
-  <!-- English Version (/en) -->
+  <!-- 2. Main English Homepage (/en) -->
   <url>
-    <loc>/en</loc>
-    <xhtml:link rel="alternate" hreflang="fr" href="/" />
-    <xhtml:link rel="alternate" hreflang="en" href="/en" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="/" />
+    <loc>https://observatoire-climatique-mondial.workers.dev/en</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://observatoire-climatique-mondial.workers.dev/" />
     <lastmod>2026-10-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+  </url>
+
+  <!-- 3. Dossiers Climatiques Nationaux Indexables (FR & EN) -->
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=France</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=France" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=France" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/en?country=France</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=France" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=France" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=USA</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=USA" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=USA" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/en?country=USA</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=USA" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=USA" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Chine</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Chine" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=China" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Bresil</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Bresil" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=Brazil" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Allemagne</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Allemagne" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=Germany" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Canada</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Canada" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=Canada" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Suisse</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Suisse" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=Switzerland" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Maroc</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Maroc" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=Morocco" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Belgique</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Belgique" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=Belgium" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Espagne</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Espagne" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=Spain" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Italie</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Italie" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=Italy" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Japon</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Japon" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=Japan" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://observatoire-climatique-mondial.workers.dev/?country=Inde</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://observatoire-climatique-mondial.workers.dev/?country=Inde" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://observatoire-climatique-mondial.workers.dev/en?country=India" />
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 </urlset>

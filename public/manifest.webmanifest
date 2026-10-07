@@ -1,0 +1,17 @@
+{
+  "name": "Observatoire Climatique Mondial | Global Climate Observatory",
+  "short_name": "Climat Observatoire",
+  "description": "Observatoire scientifique du réchauffement climatique, de la déforestation mondiale, des actions du WWF et des politiques climatiques par pays.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0F172A",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

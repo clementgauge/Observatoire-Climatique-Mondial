@@ -1,10 +1,16 @@
 User-agent: *
 Allow: /
 Allow: /en
+Allow: /sitemap.xml
 
 User-agent: Googlebot
 Allow: /
 Allow: /en
+Allow: /sitemap.xml
 
-# Sitemap path (resolved relative to your production domain, e.g., Cloudflare Workers / Custom Domain)
-Sitemap: /sitemap.xml
+User-agent: Bingbot
+Allow: /
+Allow: /en
+Allow: /sitemap.xml
+
+Sitemap: https://observatoire-climatique-mondial.workers.dev/sitemap.xml

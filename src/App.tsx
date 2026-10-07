@@ -63,6 +63,11 @@ function detectInitialLanguage(): Language {
 function getInitialCountryQuery(): string {
   if (typeof window === 'undefined') return '';
   try {
+    const params = new URLSearchParams(window.location.search);
+    const urlCountry = params.get('country') || params.get('pays');
+    if (urlCountry && urlCountry.trim().length > 0) {
+      return urlCountry.trim();
+    }
     return sessionStorage.getItem(COUNTRY_STORAGE_KEY) || '';
   } catch {
     return '';
@@ -244,13 +249,21 @@ export default function App() {
     document.documentElement.lang = isEn ? 'en' : 'fr';
 
     const siteName = isEn ? 'Global Climate Observatory' : 'Observatoire Climatique Mondial';
-    const title = isEn
-      ? 'Global Climate Observatory — Real-Time Global Warming Data, Deforestation, WWF & Climate Policies'
-      : 'Observatoire Climatique Mondial — Réchauffement Climatique, Données Temps Réel, Déforestation & Actions WWF';
+    const title = activeCountryDossier
+      ? isEn
+        ? `${activeCountryDossier.nameEn} Climate, Emissions & WWF Dossier | ${siteName}`
+        : `${activeCountryDossier.nameFr} — Bilan Climatique, Forêts & WWF | ${siteName}`
+      : isEn
+      ? 'Global Climate Observatory — Real-Time Climate & Warming Data'
+      : 'Observatoire Climatique Mondial — Climat & Données en Direct';
 
-    const description = isEn
-      ? 'Global Climate Observatory: real-time atmospheric observations (NOAA, NASA GISS, Copernicus), global warming causes (59.1 GtCO₂e/yr), tropical deforestation, WWF wildlife protection, and climate laws across the world.'
-      : "Observatoire Climatique Mondial : données scientifiques en temps réel (NOAA, NASA GISS, Copernicus, Europa.eu), causes par secteur, déforestation mondiale, actions du WWF pour les animaux et mesures en France et dans le monde.";
+    const description = activeCountryDossier
+      ? isEn
+        ? `${activeCountryDossier.nameEn} climate dossier: ${activeCountryDossier.annualMtCO2e} MtCO2e/yr (${activeCountryDossier.perCapitaTonnes} t/cap), ${activeCountryDossier.forestCoverPercent}% forest cover, WWF actions & laws.`
+        : `Dossier climat ${activeCountryDossier.nameFr} : ${activeCountryDossier.annualMtCO2e} MtCO2e/an (${activeCountryDossier.perCapitaTonnes} t/hab), ${activeCountryDossier.forestCoverPercent} % de forêts, actions WWF et lois.`
+      : isEn
+      ? 'Global Climate Observatory: real-time climate data (NOAA, NASA, IPCC), global warming causes, deforestation, WWF wildlife protection & country laws.'
+      : 'Observatoire Climatique Mondial : données en direct (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays.';
 
     document.title = title;
 
@@ -292,7 +305,7 @@ export default function App() {
 
     const twDesc = document.getElementById('tw-desc');
     if (twDesc) twDesc.setAttribute('content', description);
-  }, [isEn]);
+  }, [isEn, activeCountryDossier]);
 
   // Listen to browser back/forward navigation between / and /en
   useEffect(() => {
@@ -1019,6 +1032,32 @@ export default function App() {
               {isEn ? 'Download Scientific Report (PDF)' : 'Télécharger le rapport scientifique (PDF)'}
             </button>
           </div>
+        </div>
+
+        {/* Crawlable National Climate Dossier Directory for Search Engine Indexing */}
+        <div className="max-w-[1360px] mx-auto mt-6 pt-6 border-t border-slate-100 text-[11px] text-slate-400 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="font-semibold text-slate-500">
+            {isEn ? 'Indexed Country Dossiers:' : 'Dossiers Pays Indexés :'}
+          </span>
+          {ALL_COUNTRY_DOSSIERS.slice(0, 18).map((c) => {
+            const cName = isEn ? c.nameEn : c.nameFr;
+            const href = isEn
+              ? `/en?country=${encodeURIComponent(c.nameEn)}`
+              : `/?country=${encodeURIComponent(c.nameFr)}`;
+            return (
+              <a
+                key={c.iso3}
+                href={href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleQuickSelectCountry(c);
+                }}
+                className="hover:text-slate-800 hover:underline transition-colors"
+              >
+                {cName}
+              </a>
+            );
+          })}
         </div>
       </footer>
     </div>

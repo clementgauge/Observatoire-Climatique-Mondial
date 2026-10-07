@@ -3,36 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <title>Observatoire Climatique Mondial | Global Climate Observatory — Réchauffement, Déforestation, Actions WWF & Politiques</title>
+    <title>Observatoire Climatique Mondial — Climat &amp; Données en Direct</title>
     <meta name="application-name" content="Observatoire Climatique Mondial" />
     <meta name="apple-mobile-web-app-title" content="Observatoire Climatique Mondial" />
+    <meta name="author" content="Observatoire Climatique Mondial — Global Climate Observatory" />
     <meta name="google-site-verification" content="google1c5f3169018b1d05" />
-    <meta name="description" content="Observatoire Climatique Mondial (Global Climate Observatory) : données en temps réel (NOAA, NASA GISS, Copernicus, Europa.eu), causes par secteur, déforestation mondiale, actions du WWF pour les animaux et mesures en France et dans le monde." />
+    <meta name="description" content="Observatoire Climatique Mondial : données en direct (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays." />
     <meta name="keywords" content="Observatoire Climatique Mondial, Global Climate Observatory, réchauffement climatique, dérèglement climatique, global warming data, causes du réchauffement climatique, déforestation mondiale, WWF France protection animaux, indice planète vivante, émissions CO2 méthane temps réel, NOAA Mauna Loa, GIEC AR6, Pacte Vert Européen EUDR, Stratégie Nationale Bas Carbone France" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-    <meta name="theme-color" content="#F8FAFC" />
+    <meta name="theme-color" content="#0F172A" />
 
-    <!-- Canonical & Hreflang Internationalization — Dynamically bound to active domain (Cloudflare / Custom Domain) -->
-    <link rel="canonical" id="canonical-link" />
-    <link rel="alternate" hreflang="fr" id="hreflang-fr" />
-    <link rel="alternate" hreflang="en" id="hreflang-en" />
-    <link rel="alternate" hreflang="x-default" id="hreflang-default" />
+    <!-- Favicon & Web App Manifest -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Canonical & Hreflang Internationalization — Pre-populated for static crawlers & dynamically bound to active domain -->
+    <link rel="canonical" id="canonical-link" href="https://observatoire-climatique-mondial.workers.dev/" />
+    <link rel="alternate" hreflang="fr" id="hreflang-fr" href="https://observatoire-climatique-mondial.workers.dev/" />
+    <link rel="alternate" hreflang="en" id="hreflang-en" href="https://observatoire-climatique-mondial.workers.dev/en" />
+    <link rel="alternate" hreflang="x-default" id="hreflang-default" href="https://observatoire-climatique-mondial.workers.dev/" />
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
 
     <!-- OpenGraph Social Cards -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Observatoire Climatique Mondial / Global Climate Observatory" />
-    <meta property="og:title" id="og-title" content="Observatoire Climatique Mondial — Réchauffement, Déforestation, Actions WWF & Politiques" />
-    <meta property="og:description" id="og-desc" content="Observatoire scientifique du dérèglement climatique : données temps réel (NOAA, NASA GISS, Copernicus, Europa.eu), causes par secteur, déforestation mondiale, actions du WWF pour les animaux et mesures en France et dans le monde." />
-    <meta property="og:url" id="og-url" content="" />
+    <meta property="og:site_name" content="Observatoire Climatique Mondial" />
+    <meta property="og:title" id="og-title" content="Observatoire Climatique Mondial — Climat &amp; Données en Direct" />
+    <meta property="og:description" id="og-desc" content="Observatoire Climatique Mondial : données en direct (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays." />
+    <meta property="og:url" id="og-url" content="https://observatoire-climatique-mondial.workers.dev/" />
+    <meta property="og:image" content="https://observatoire-climatique-mondial.workers.dev/og-climate-observatory.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Observatoire Climatique Mondial — Données CO2, Anomalie Thermique, Déforestation &amp; Biodiversité WWF" />
     <meta property="og:locale" id="og-locale" content="fr_FR" />
     <meta property="og:locale:alternate" content="en_US" />
 
     <!-- Twitter / X Cards -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" id="tw-title" content="Observatoire Climatique Mondial — Réchauffement, Déforestation, Actions WWF & Politiques" />
-    <meta name="twitter:description" id="tw-desc" content="Observatoire scientifique du dérèglement climatique : données temps réel (NOAA, NASA GISS, Copernicus, Europa.eu), causes par secteur, déforestation mondiale, actions du WWF pour les animaux et mesures en France et dans le monde." />
+    <meta name="twitter:title" id="tw-title" content="Observatoire Climatique Mondial — Climat &amp; Données en Direct" />
+    <meta name="twitter:description" id="tw-desc" content="Observatoire Climatique Mondial : données en direct (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays." />
+    <meta name="twitter:image" content="https://observatoire-climatique-mondial.workers.dev/og-climate-observatory.svg" />
+    <meta name="twitter:image:alt" content="Observatoire Climatique Mondial — Global Climate Observatory" />
 
     <!-- Early synchronous domain resolver so crawlers immediately inspect the real production host (e.g. workers.dev) -->
     <script>
@@ -72,8 +84,45 @@
               "Global Climate Observatory",
               "Observatoire Climatique Mondial — Global Climate Observatory"
             ],
+            "url": "https://observatoire-climatique-mondial.workers.dev/",
             "inLanguage": ["fr-FR", "en-US"],
-            "description": "Observatoire scientifique du dérèglement climatique : données en temps réel (NOAA, NASA GISS, Copernicus, Europa.eu), causes par secteur, déforestation mondiale, actions du WWF pour les animaux et mesures en France et dans le monde."
+            "description": "Observatoire Climatique Mondial : données en direct (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays.",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://observatoire-climatique-mondial.workers.dev/?country={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "name": "Observatoire Climatique Mondial",
+            "alternateName": "Global Climate Observatory",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "All",
+            "inLanguage": ["fr", "en"],
+            "description": "Plateforme scientifique interactive d'analyse du réchauffement climatique, de la déforestation mondiale, de la protection de la faune (WWF) et des politiques climatiques par pays.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "EUR"
+            }
+          },
+          {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Observatoire Climatique Mondial (FR)",
+                "item": "https://observatoire-climatique-mondial.workers.dev/"
+              },
+              {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Global Climate Observatory (EN)",
+                "item": "https://observatoire-climatique-mondial.workers.dev/en"
+              }
+            ]
           },
           {
             "@type": "Dataset",
