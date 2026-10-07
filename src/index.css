@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @layer base {
   :root {
@@ -23,3 +24,10 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+.leaflet-container {
+  font-family: var(--font-sans);
+  background-color: #E2E8F0;
+  z-index: 10;
+}
+

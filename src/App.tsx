@@ -6,19 +6,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   fetchAtmosphericTelemetry,
-  LiveAtmosphericMetrics
+  LiveAtmosphericMetrics,
+  LiveStationTelemetry
 } from './services/climateApiService';
+import { generateClimatePdfReport } from './services/pdfReportGenerator';
 import { HistoricalCorrelationChart } from './components/HistoricalCorrelationChart';
+import { GlobalInteractiveClimateMap } from './components/GlobalInteractiveClimateMap';
 import { SectorCausesExplorer } from './components/SectorCausesExplorer';
 import { CountryEmissionsMatrix } from './components/CountryEmissionsMatrix';
 import { LiveStationTelemetryConsole } from './components/LiveStationTelemetryConsole';
+import { PlanetaryBoundariesRadarSection } from './components/PlanetaryBoundariesRadarSection';
 import { TrajectorySimulator2100 } from './components/TrajectorySimulator2100';
-import { RefreshCw, ArrowDownRight, Download, Menu, X } from 'lucide-react';
-import {
-  GLOBAL_CAUSES_BY_SECTOR,
-  COUNTRY_EMISSION_PROFILES,
-  Language
-} from './data/climateDatasets';
+import { ScientificMethodologySection } from './components/ScientificMethodologySection';
+import { RefreshCw, ArrowDownRight, FileText, Menu, X, ExternalLink } from 'lucide-react';
+import { Language } from './data/climateDatasets';
 
 function detectInitialLanguage(): Language {
   if (typeof window === 'undefined') return 'fr';
@@ -36,37 +37,43 @@ function detectInitialLanguage(): Language {
 export default function App() {
   const [lang, setLang] = useState<Language>(detectInitialLanguage);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [activeStationTelemetry, setActiveStationTelemetry] =
+    useState<LiveStationTelemetry | null>(null);
   const [atmospheric, setAtmospheric] = useState<LiveAtmosphericMetrics>({
-    co2Ppm: 426.84,
-    co2SeasonalCycle: 427.12,
-    co2YearAgoPpm: 424.15,
-    ch4Ppb: 1938.6,
-    ch4YearAgoPpb: 1927.4,
-    tempAnomalyC: 1.52,
+    co2Ppm: 426.39,
+    co2DateLabel: '2026-10-06',
+    co2YearAgoPpm: 423.65,
+    ch4Ppb: 1941.23,
+    ch4DateLabel: '2026-05',
+    ch4YearAgoPpb: 1931.4,
+    tempAnomalyC: 1.48,
+    tempDateLabel: '2026',
     fetchedAtIso: new Date().toISOString(),
     isLiveApi: false,
     sourceLabelFr: 'Synchronisation API en cours...',
-    sourceLabelEn: 'Synchronizing public API...'
+    sourceLabelEn: 'Synchronizing public API...',
+    channels: []
   });
   const [syncing, setSyncing] = useState<boolean>(true);
   const [tonnesEmittedSession, setTonnesEmittedSession] = useState<number>(0);
 
   const isEn = lang === 'en';
 
-  // Sync URL (/ vs /en), document <html lang>, <title>, <meta description>, canonical & OpenGraph for Google Search Console
+  // Dynamically resolve the real active domain (e.g. Cloudflare workers.dev or custom domain)
   useEffect(() => {
-    const origin = window.location.origin;
+    const configuredSiteUrl = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/+$/, '');
+    const origin = configuredSiteUrl && configuredSiteUrl.length > 4 ? configuredSiteUrl : window.location.origin;
     const targetUrl = isEn ? `${origin}/en` : `${origin}/`;
 
     document.documentElement.lang = isEn ? 'en' : 'fr';
 
     const title = isEn
-      ? 'Global Climate Observatory — Real-Time Data & Warming Causes'
-      : 'Observatoire Climatique Mondial — Données & Télémesure';
+      ? 'Global Climate Observatory — Real-Time Data (NOAA, NASA GISS, IPCC, Copernicus)'
+      : 'Observatoire Climatique Mondial — Données Scientifiques NOAA, NASA GISS, GIEC & Copernicus';
 
     const description = isEn
-      ? 'Interactive scientific platform analyzing global warming root causes by sector (59.1 GtCO₂e/yr), country emissions, and live NOAA & Open-Meteo atmospheric telemetry.'
-      : "Plateforme scientifique interactive d'analyse du réchauffement climatique, des émissions mondiales de GES par secteur et de télémesure environnementale en temps réel.";
+      ? 'Interactive scientific platform analyzing global warming root causes by sector (59.1 GtCO₂e/yr — IPCC AR6), country emissions (Global Carbon Project), and live NOAA & Open-Meteo telemetry.'
+      : "Observatoire scientifique du réchauffement climatique : données en temps réel (NOAA Mauna Loa, NASA GISS, Copernicus C3S, GIEC AR6, Global Carbon Project) et analyse mondiale des causes par secteur (59,1 GtCO2eq/an).";
 
     document.title = title;
 
@@ -147,32 +154,13 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleExportReport = () => {
-    const payload = {
-      generatedAt: new Date().toISOString(),
-      language: lang,
-      observatory: isEn
-        ? 'Global Climate Observatory — Scientific Synthesis'
-        : 'Observatoire Climatique Mondial — Synthèse Scientifique',
-      liveTelemetry: atmospheric,
-      globalEmissionsTotalGtCO2e: 59.1,
-      sectors: GLOBAL_CAUSES_BY_SECTOR.map((s) => ({
-        name: isEn ? s.nameEn : s.name,
-        sharePercent: s.sharePercent,
-        annualGtCO2e: s.annualGtCO2e,
-        primaryGas: s.primaryGas
-      })),
-      topEmitters: COUNTRY_EMISSION_PROFILES
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: 'application/json'
+  const handleExportPdf = () => {
+    generateClimatePdfReport({
+      lang,
+      atmospheric,
+      activeStationTelemetry,
+      tonnesEmittedSession
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `climate-observatory-data-${lang}-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const co2AnnualDelta = (atmospheric.co2Ppm - atmospheric.co2YearAgoPpm).toFixed(2);
@@ -195,16 +183,22 @@ export default function App() {
             {isEn ? 'Global Climate Observatory' : 'Observatoire Climatique Mondial'}
           </a>
 
-          {/* Zone 2: 5 Clean Text Navigation Links (Desktop) */}
+          {/* Zone 2: 6 Clean Text Navigation Links (Desktop) */}
           <nav
             aria-label={isEn ? 'Primary Navigation' : 'Navigation Principale'}
-            className="hidden xl:flex items-center gap-6 text-sm font-medium text-slate-600"
+            className="hidden xl:flex items-center gap-5 text-sm font-medium text-slate-600"
           >
             <a
               href="#observatoire"
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
-              {isEn ? 'Global Telemetry' : 'Télémesure Globale'}
+              {isEn ? 'Telemetry' : 'Télémesure'}
+            </a>
+            <a
+              href="#carte-mondiale"
+              className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
+            >
+              {isEn ? 'Interactive Map' : 'Carte Mondiale'}
             </a>
             <a
               href="#causes-mondiales"
@@ -219,22 +213,21 @@ export default function App() {
               {isEn ? 'Country Atlas' : 'Atlas des Pays'}
             </a>
             <a
-              href="#stations-temps-reel"
+              href="#analyse-europa-wwf"
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
-              {isEn ? 'Live Sensors' : 'Capteurs en Direct'}
+              {isEn ? 'Europa.eu & WWF' : 'Europa.eu & WWF'}
             </a>
             <a
-              href="#simulateur-2100"
+              href="#sources-scientifiques"
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
-              {isEn ? '2100 Simulator' : 'Simulateur 2100'}
+              {isEn ? 'Sources & APIs' : 'Sources & APIs'}
             </a>
           </nav>
 
-          {/* Zone 3: Language Switcher Links (/ and /en) + Primary Export Action + Mobile Menu Trigger */}
+          {/* Zone 3: Language Switcher Links (/ and /en) + Primary Export PDF Action + Mobile Menu Trigger */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Explicit crawlable links for FR (/) and EN (/en) */}
             <div
               role="group"
               aria-label={isEn ? 'Language selector' : 'Sélecteur de langue'}
@@ -270,11 +263,11 @@ export default function App() {
 
             <button
               type="button"
-              onClick={handleExportReport}
+              onClick={handleExportPdf}
               className="hidden sm:inline-flex px-3.5 py-2 text-xs font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors items-center gap-1.5 whitespace-nowrap cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Export JSON' : 'Exporter JSON'}</span>
+              <FileText className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Export PDF' : 'Exporter PDF'}</span>
             </button>
 
             <button
@@ -301,7 +294,7 @@ export default function App() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
-                {isEn ? '01. Global Telemetry' : '01. Télémesure Globale'}
+                {isEn ? '01. Telemetry' : '01. Télémesure'}
               </a>
               <a
                 href="#causes-mondiales"
@@ -331,18 +324,25 @@ export default function App() {
               >
                 {isEn ? '05. 2100 Simulator' : '05. Simulateur 2100'}
               </a>
-              <button
-                type="button"
-                onClick={() => {
-                  handleExportReport();
-                  setMobileMenuOpen(false);
-                }}
-                className="px-3 py-2 bg-slate-900 text-white rounded-md flex items-center justify-center gap-1.5 text-xs"
+              <a
+                href="#sources-scientifiques"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>{isEn ? 'Export Dataset (JSON)' : 'Exporter Données (JSON)'}</span>
-              </button>
+                {isEn ? '06. Sources & APIs' : '06. Sources & APIs'}
+              </a>
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                handleExportPdf();
+                setMobileMenuOpen(false);
+              }}
+              className="mt-1 px-3 py-2.5 bg-slate-900 text-white rounded-md flex items-center justify-center gap-1.5 text-xs font-medium cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>{isEn ? 'Export Full Report (PDF)' : 'Exporter le Rapport Complet (PDF)'}</span>
+            </button>
           </nav>
         )}
       </header>
@@ -351,7 +351,7 @@ export default function App() {
       <main className="flex-1">
         <section id="observatoire" className="pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-16 lg:pb-20">
           <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Quiet Unboxed Editorial Metadata */}
+            {/* Quiet Unboxed Editorial Metadata with Explicit Institutional Attribution */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-slate-200 text-xs text-slate-500">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 font-mono-tabular text-emerald-700 font-medium">
@@ -365,6 +365,15 @@ export default function App() {
                   {isEn ? atmospheric.sourceLabelEn : atmospheric.sourceLabelFr}
                 </span>
                 <span aria-hidden="true">·</span>
+                <a
+                  href="#sources-scientifiques"
+                  className="text-slate-700 hover:text-slate-900 underline underline-offset-2"
+                >
+                  {isEn
+                    ? 'Verify Sources (NOAA, NASA GISS, IPCC, Copernicus)'
+                    : 'Vérifier les Sources (NOAA, NASA GISS, GIEC, Copernicus)'}
+                </a>
+                <span aria-hidden="true">·</span>
                 <button
                   type="button"
                   onClick={loadAtmospheric}
@@ -377,8 +386,8 @@ export default function App() {
               </div>
               <div className="font-mono-tabular text-slate-700">
                 {isEn
-                  ? 'GHG emitted since opening this page: '
-                  : 'GES émis depuis l’ouverture de cette page : '}
+                  ? 'GHG emitted since opening this page (IPCC 59.1 Gt/yr): '
+                  : 'GES émis depuis l’ouverture de la page (GIEC 59,1 Gt/an) : '}
                 <strong className="text-rose-600">
                   +{tonnesEmittedSession.toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO₂eq
                 </strong>{' '}
@@ -398,8 +407,8 @@ export default function App() {
               <div className="lg:col-span-4">
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
                   {isEn
-                    ? `Since the pre-industrial era (1850), atmospheric carbon dioxide has risen from 280 ppm to ${atmospheric.co2Ppm.toFixed(1)} ppm. Explore real-time data from public scientific observatories and the complete global breakdown of emission sources.`
-                    : `Depuis la révolution industrielle (1850), la concentration atmosphérique en dioxyde de carbone est passée de 280 ppm à plus de ${atmospheric.co2Ppm.toFixed(1)} ppm. Explorez en temps réel les données issues des observatoires publics et la répartition mondiale des sources d’émissions.`}
+                    ? `Since the pre-industrial era (1850), atmospheric carbon dioxide measured at Mauna Loa (NOAA GML) has risen from 280 ppm to ${atmospheric.co2Ppm.toFixed(2)} ppm. Explore real-time data from public scientific observatories (NASA GISS, Copernicus, IPCC AR6) and the complete global breakdown of emission sources.`
+                    : `Depuis la révolution industrielle (1850), la concentration atmosphérique en dioxyde de carbone mesurée à Mauna Loa (NOAA GML) est passée de 280 ppm à ${atmospheric.co2Ppm.toFixed(2)} ppm. Explorez en temps réel les données issues des observatoires publics (NASA GISS, Copernicus, GIEC AR6) et la répartition mondiale des sources d’émissions.`}
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-900">
                   <a
@@ -417,86 +426,133 @@ export default function App() {
               </div>
             </div>
 
-            {/* 4-Column Precision Telemetry Readout Strip */}
+            {/* 4-Column Precision Telemetry Readout Strip with Explicit Source Links */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-slate-200 bg-white divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mb-8 sm:mb-10">
               {/* Metric 1: CO2 */}
-              <div className="p-5 sm:p-6">
-                <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular">
-                  {isEn ? 'CO₂ Concentration (Mauna Loa)' : 'Concentration CO₂ (Mauna Loa)'}
+              <div className="p-5 sm:p-6 flex flex-col justify-between">
+                <div>
+                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
+                    <span>{isEn ? 'CO₂ (Mauna Loa)' : 'CO₂ (Mauna Loa)'}</span>
+                    <span className="text-[10px] text-emerald-700">{atmospheric.co2DateLabel}</span>
+                  </div>
+                  <div className="mt-2 flex items-baseline">
+                    <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
+                      {atmospheric.co2Ppm.toFixed(2)}
+                    </span>
+                    <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
+                      ppm
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs font-mono-tabular text-rose-600">
+                    {isEn
+                      ? `DELTA: +${co2AnnualDelta} ppm / 12 mo (+52% vs 1850)`
+                      : `DELTA : +${co2AnnualDelta} ppm / 12 mois (+52 % vs 1850)`}
+                  </div>
                 </div>
-                <div className="mt-2 flex items-baseline">
-                  <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
-                    {atmospheric.co2Ppm.toFixed(2)}
-                  </span>
-                  <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
-                    ppm
-                  </span>
-                </div>
-                <div className="mt-2 text-xs font-mono-tabular text-rose-600">
-                  {isEn
-                    ? `DELTA: +${co2AnnualDelta} ppm / 12 mo (+52% vs 1850)`
-                    : `DELTA : +${co2AnnualDelta} ppm / 12 mois (+52 % vs 1850)`}
-                </div>
+                <a
+                  href="https://gml.noaa.gov/ccgg/trends/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+                >
+                  <span>Source : NOAA GML Direct Feed</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
 
               {/* Metric 2: Temperature Anomaly */}
-              <div className="p-5 sm:p-6">
-                <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular">
-                  {isEn ? 'Mean Thermal Anomaly' : 'Anomalie Thermique Moyenne'}
+              <div className="p-5 sm:p-6 flex flex-col justify-between">
+                <div>
+                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
+                    <span>{isEn ? 'Thermal Anomaly' : 'Anomalie Thermique'}</span>
+                    <span className="text-[10px] text-emerald-700">{atmospheric.tempDateLabel}</span>
+                  </div>
+                  <div className="mt-2 flex items-baseline">
+                    <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-rose-600">
+                      +{atmospheric.tempAnomalyC.toFixed(2)}
+                    </span>
+                    <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
+                      °C vs 1850–1900
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs font-mono-tabular text-amber-700">
+                    {isEn
+                      ? 'RATE: +0.26 °C / current decade'
+                      : 'CADENCE : +0,26 °C / décennie actuelle'}
+                  </div>
                 </div>
-                <div className="mt-2 flex items-baseline">
-                  <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-rose-600">
-                    +{atmospheric.tempAnomalyC.toFixed(2)}
-                  </span>
-                  <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
-                    °C vs 1850–1900
-                  </span>
-                </div>
-                <div className="mt-2 text-xs font-mono-tabular text-amber-700">
-                  {isEn
-                    ? 'RATE: +0.26 °C / current decade'
-                    : 'CADENCE : +0,26 °C / décennie actuelle'}
-                </div>
+                <a
+                  href="https://data.giss.nasa.gov/gistemp/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+                >
+                  <span>Source : NASA GISS / Copernicus ERA5</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
 
               {/* Metric 3: Atmospheric Methane */}
-              <div className="p-5 sm:p-6">
-                <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular">
-                  {isEn ? 'Atmospheric Methane (CH₄)' : 'Méthane Atmosphérique (CH₄)'}
+              <div className="p-5 sm:p-6 flex flex-col justify-between">
+                <div>
+                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
+                    <span>{isEn ? 'Methane (CH₄)' : 'Méthane (CH₄)'}</span>
+                    <span className="text-[10px] text-emerald-700">{atmospheric.ch4DateLabel}</span>
+                  </div>
+                  <div className="mt-2 flex items-baseline">
+                    <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
+                      {atmospheric.ch4Ppb.toFixed(1)}
+                    </span>
+                    <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
+                      ppb
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs font-mono-tabular text-emerald-700">
+                    {isEn
+                      ? `DELTA: +${ch4AnnualDelta} ppb / yr (84× GWP-20)`
+                      : `DELTA : +${ch4AnnualDelta} ppb / an (PRG 84× sur 20 ans)`}
+                  </div>
                 </div>
-                <div className="mt-2 flex items-baseline">
-                  <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
-                    {atmospheric.ch4Ppb.toFixed(1)}
-                  </span>
-                  <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
-                    ppb
-                  </span>
-                </div>
-                <div className="mt-2 text-xs font-mono-tabular text-emerald-700">
-                  {isEn
-                    ? `DELTA: +${ch4AnnualDelta} ppb / yr (84× GWP-20)`
-                    : `DELTA : +${ch4AnnualDelta} ppb / an (PRG 84× sur 20 ans)`}
-                </div>
+                <a
+                  href="https://gml.noaa.gov/ccgg/trends_ch4/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+                >
+                  <span>Source : NOAA Global CH₄ Network</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
 
               {/* Metric 4: Annual Anthropogenic Flux */}
-              <div className="p-5 sm:p-6">
-                <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular">
-                  {isEn ? 'Global Anthropogenic Flux' : 'Flux Anthropique Mondial (GES)'}
+              <div className="p-5 sm:p-6 flex flex-col justify-between">
+                <div>
+                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular">
+                    {isEn ? 'Global Anthropogenic Flux' : 'Flux Anthropique Mondial (GES)'}
+                  </div>
+                  <div className="mt-2 flex items-baseline">
+                    <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
+                      {isEn ? '59.10' : '59,10'}
+                    </span>
+                    <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
+                      {isEn ? 'GtCO₂eq / yr' : 'GtCO₂eq / an'}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs font-mono-tabular text-slate-600">
+                    {isEn
+                      ? 'REMAINING 1.5 °C BUDGET: ~200 GtCO₂ (~5 yrs)'
+                      : 'BUDGET 1,5 °C RESTANT : ~200 GtCO₂ (~5 ans)'}
+                  </div>
                 </div>
-                <div className="mt-2 flex items-baseline">
-                  <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
-                    {isEn ? '59.10' : '59,10'}
-                  </span>
-                  <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
-                    {isEn ? 'GtCO₂eq / yr' : 'GtCO₂eq / an'}
-                  </span>
-                </div>
-                <div className="mt-2 text-xs font-mono-tabular text-slate-600">
-                  {isEn
-                    ? 'REMAINING 1.5 °C BUDGET: ~200 GtCO₂ (~5 yrs)'
-                    : 'BUDGET 1,5 °C RESTANT : ~200 GtCO₂ (~5 ans)'}
-                </div>
+                <a
+                  href="https://www.ipcc.ch/report/ar6/wg3/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+                >
+                  <span>Source : GIEC / IPCC AR6 & GCP</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
             </div>
 
@@ -505,6 +561,9 @@ export default function App() {
           </div>
         </section>
 
+        {/* Interactive Spatial Map: EDGAR Emitters, Live Sensors & WWF Hotspots */}
+        <GlobalInteractiveClimateMap lang={lang} />
+
         {/* Section 2: Global Causes by Sector & Sub-sectors */}
         <SectorCausesExplorer lang={lang} />
 
@@ -512,13 +571,25 @@ export default function App() {
         <CountryEmissionsMatrix lang={lang} />
 
         {/* Section 4: Real-Time Global Observatory Stations (Open-Meteo Weather & Air Quality APIs) */}
-        <LiveStationTelemetryConsole lang={lang} />
+        <LiveStationTelemetryConsole
+          lang={lang}
+          onStationDataChange={setActiveStationTelemetry}
+        />
+
+        {/* European Commission (EEA / EDGAR europa.eu) & WWF France Living Planet Analytics */}
+        <PlanetaryBoundariesRadarSection lang={lang} />
 
         {/* Section 5: 2100 Mitigation Trajectory Simulator */}
         <TrajectorySimulator2100 lang={lang} />
+
+        {/* Section 6: Verifiable Scientific Sources, Methodology & Live API Audit Table */}
+        <ScientificMethodologySection
+          lang={lang}
+          channels={atmospheric.channels}
+        />
       </main>
 
-      {/* Quiet Institutional Footer with Direct Crawlable Bilingual Links & Sitemap */}
+      {/* Quiet Institutional Footer with Direct Crawlable Bilingual Links & PDF Export */}
       <footer className="border-t border-slate-200 bg-white py-10 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1360px] mx-auto flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 text-xs text-slate-500">
           <div className="max-w-2xl">
@@ -529,8 +600,8 @@ export default function App() {
             </div>
             <p className="mt-1 leading-relaxed">
               {isEn
-                ? 'Aggregated empirical datasets: NOAA Global Monitoring Laboratory, NASA GISS, IPCC Sixth Assessment Report (AR6), Global Carbon Project, World Bank Open Data API, and Open-Meteo.'
-                : 'Données scientifiques agrégées : NOAA Global Monitoring Laboratory, NASA GISS, GIEC (Sixième Rapport d’Évaluation AR6), Global Carbon Project, API Banque Mondiale et Open-Meteo.'}
+                ? 'Aggregated empirical datasets: NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), IPCC Sixth Assessment Report (AR6), Global Carbon Project, World Bank Open Data API, and Open-Meteo.'
+                : 'Données scientifiques agrégées : NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), GIEC (Sixième Rapport d’Évaluation AR6), Global Carbon Project, API Banque Mondiale et Open-Meteo.'}
             </p>
           </div>
 
@@ -577,10 +648,10 @@ export default function App() {
             <span aria-hidden="true">·</span>
             <button
               type="button"
-              onClick={handleExportReport}
-              className="hover:text-slate-900 transition-colors underline underline-offset-4 cursor-pointer"
+              onClick={handleExportPdf}
+              className="hover:text-slate-900 transition-colors underline underline-offset-4 cursor-pointer font-medium text-slate-800"
             >
-              {isEn ? 'Download Dataset (JSON)' : 'Télécharger les données (JSON)'}
+              {isEn ? 'Download Scientific Report (PDF)' : 'Télécharger le rapport scientifique (PDF)'}
             </button>
           </div>
         </div>

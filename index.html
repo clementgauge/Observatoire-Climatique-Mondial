@@ -3,39 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <title>Observatoire Climatique Mondial — Données & Télémesure</title>
-    <meta name="description" content="Plateforme scientifique interactive d'analyse du réchauffement climatique, des émissions mondiales de GES par secteur et de télémesure environnementale en temps réel." />
+    <title>Observatoire Climatique Mondial — Données Scientifiques NOAA, NASA GISS, GIEC & Copernicus</title>
+    <meta name="description" content="Observatoire scientifique du réchauffement climatique : données en temps réel (NOAA Mauna Loa, NASA GISS, Copernicus C3S, GIEC AR6, Global Carbon Project) et analyse mondiale des causes par secteur (59,1 GtCO2eq/an)." />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="theme-color" content="#F8FAFC" />
 
-    <!-- Canonical & Hreflang Internationalization for Google Search Console -->
-    <link rel="canonical" id="canonical-link" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/" />
-    <link rel="alternate" hreflang="fr" id="hreflang-fr" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/" />
-    <link rel="alternate" hreflang="en" id="hreflang-en" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/en" />
-    <link rel="alternate" hreflang="x-default" id="hreflang-default" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/" />
+    <!-- Canonical & Hreflang Internationalization — Dynamically bound to active domain (Cloudflare / Custom Domain) -->
+    <link rel="canonical" id="canonical-link" />
+    <link rel="alternate" hreflang="fr" id="hreflang-fr" />
+    <link rel="alternate" hreflang="en" id="hreflang-en" />
+    <link rel="alternate" hreflang="x-default" id="hreflang-default" />
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
 
     <!-- OpenGraph Social Cards -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Observatoire Climatique Mondial / Global Climate Observatory" />
-    <meta property="og:title" id="og-title" content="Observatoire Climatique Mondial — Données & Télémesure" />
-    <meta property="og:description" id="og-desc" content="Plateforme scientifique interactive d'analyse du réchauffement climatique, des émissions mondiales de GES par secteur et de télémesure environnementale en temps réel." />
-    <meta property="og:url" id="og-url" content="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/" />
+    <meta property="og:title" id="og-title" content="Observatoire Climatique Mondial — Données Scientifiques NOAA, NASA GISS, GIEC & Copernicus" />
+    <meta property="og:description" id="og-desc" content="Observatoire scientifique du réchauffement climatique : données en temps réel (NOAA Mauna Loa, NASA GISS, Copernicus C3S, GIEC AR6, Global Carbon Project) et analyse mondiale des causes par secteur (59,1 GtCO2eq/an)." />
+    <meta property="og:url" id="og-url" content="" />
     <meta property="og:locale" id="og-locale" content="fr_FR" />
     <meta property="og:locale:alternate" content="en_US" />
 
     <!-- Twitter / X Cards -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" id="tw-title" content="Observatoire Climatique Mondial — Données & Télémesure" />
-    <meta name="twitter:description" id="tw-desc" content="Plateforme scientifique interactive d'analyse du réchauffement climatique, des émissions mondiales de GES par secteur et de télémesure environnementale en temps réel." />
+    <meta name="twitter:title" id="tw-title" content="Observatoire Climatique Mondial — Données Scientifiques NOAA, NASA GISS, GIEC & Copernicus" />
+    <meta name="twitter:description" id="tw-desc" content="Observatoire scientifique du réchauffement climatique : données en temps réel (NOAA Mauna Loa, NASA GISS, Copernicus C3S, GIEC AR6, Global Carbon Project) et analyse mondiale des causes par secteur (59,1 GtCO2eq/an)." />
+
+    <!-- Early synchronous domain resolver so crawlers immediately inspect the real production host (e.g. workers.dev) -->
+    <script>
+      (function () {
+        try {
+          var origin = window.location.origin;
+          var isEn = window.location.pathname.toLowerCase().indexOf('/en') === 0;
+          var currentCanonical = origin + (isEn ? '/en' : '/');
+          var canEl = document.getElementById('canonical-link');
+          var ogUrlEl = document.getElementById('og-url');
+          var frEl = document.getElementById('hreflang-fr');
+          var enEl = document.getElementById('hreflang-en');
+          var defEl = document.getElementById('hreflang-default');
+          if (canEl) canEl.setAttribute('href', currentCanonical);
+          if (ogUrlEl) ogUrlEl.setAttribute('content', currentCanonical);
+          if (frEl) frEl.setAttribute('href', origin + '/');
+          if (enEl) enEl.setAttribute('href', origin + '/en');
+          if (defEl) defEl.setAttribute('href', origin + '/');
+        } catch (e) {}
+      })();
+    </script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Schema.org Structured Data (JSON-LD) for Google Rich Results & Dataset Search -->
+    <!-- Schema.org Structured Data (JSON-LD) citing official scientific sources -->
     <script type="application/ld+json" id="schema-jsonld">
       {
         "@context": "https://schema.org",
@@ -44,30 +65,25 @@
             "@type": "WebSite",
             "name": "Observatoire Climatique Mondial — Global Climate Observatory",
             "alternateName": "Global Climate Observatory — Live Telemetry & Causes",
-            "url": "https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/",
             "inLanguage": ["fr", "en"],
-            "description": "Plateforme scientifique interactive d'analyse du réchauffement climatique, des émissions mondiales de GES par secteur et de télémesure environnementale en temps réel."
-          },
-          {
-            "@type": "WebApplication",
-            "name": "Observatoire Climatique Mondial",
-            "applicationCategory": "ScientificApplication",
-            "operatingSystem": "All",
-            "url": "https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/",
-            "availableLanguage": ["fr", "en"],
-            "offers": {
-              "@type": "Offer",
-              "price": "0",
-              "priceCurrency": "EUR"
-            }
+            "description": "Plateforme scientifique d'analyse du réchauffement climatique, des émissions mondiales de GES par secteur (59,1 GtCO2e/an) et de télémesure environnementale en temps réel."
           },
           {
             "@type": "Dataset",
             "name": "Global Greenhouse Gas Emissions by Sector, Historical CO2/CH4 & Country Profiles (1880-2025)",
-            "description": "Empirical climate telemetry combining NOAA Mauna Loa CO2/CH4 records, NASA GISS temperature anomalies, IPCC AR6 sectoral breakdown (59.1 GtCO2e/yr), World Bank indicators, and Open-Meteo real-time atmospheric stations.",
-            "url": "https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/",
+            "description": "Empirical climate telemetry combining NOAA Global Monitoring Laboratory (Mauna Loa CO2/CH4), NASA GISS Surface Temperature Analysis (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), IPCC Sixth Assessment Report (AR6), Global Carbon Project, World Bank Open Data API, and Open-Meteo.",
             "license": "https://creativecommons.org/licenses/by/4.0/",
             "inLanguage": ["fr", "en"],
+            "isBasedOn": [
+              "https://gml.noaa.gov/ccgg/trends/",
+              "https://data.giss.nasa.gov/gistemp/",
+              "https://climate.copernicus.eu/",
+              "https://edgar.jrc.ec.europa.eu/",
+              "https://www.eea.europa.eu/",
+              "https://www.wwf.fr/rapport-planete-vivante",
+              "https://www.ipcc.ch/report/ar6/wg3/",
+              "https://globalcarbonbudget.org/"
+            ],
             "creator": {
               "@type": "Organization",
               "name": "Observatoire Climatique Mondial"
@@ -78,8 +94,63 @@
     </script>
   </head>
   <body class="bg-[#F8FAFC] text-slate-900 antialiased selection:bg-amber-600 selection:text-white overflow-x-hidden">
-    <div id="root"></div>
+    <!-- Pre-rendered semantic HTML content inside #root for instant crawler indexing & non-JS environments -->
+    <div id="root">
+      <main class="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-12 text-slate-900">
+        <header class="border-b border-slate-200 pb-6 mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="text-xs font-mono text-slate-500 uppercase">Observatoire Climatique Mondial · Global Climate Observatory</p>
+            <h1 class="text-3xl sm:text-5xl font-serif mt-2">
+              Comprendre l’accélération climatique par la mesure physique et l’analyse des causes mondiales
+            </h1>
+          </div>
+          <nav aria-label="Language selection" class="flex items-center gap-3 text-sm font-medium">
+            <a href="/" hreflang="fr" class="underline">Français (/)</a>
+            <span>·</span>
+            <a href="/en" hreflang="en" class="underline">English (/en)</a>
+          </nav>
+        </header>
+
+        <section aria-label="Indicateurs Climatiques de Référence" class="mb-10">
+          <h2 class="text-2xl font-serif mb-3">1. Télémesure Atmosphérique & Indicateurs Clés (1880–2025)</h2>
+          <p class="text-slate-700 leading-relaxed mb-4">
+            Depuis l’ère pré-industrielle (1850–1900), la concentration atmosphérique en dioxyde de carbone (CO₂) mesurée à l’observatoire de Mauna Loa (<strong>NOAA Global Monitoring Laboratory</strong>) est passée de 280 ppm à <strong>426,8 ppm</strong> (+52 %). Le méthane atmosphérique (CH₄) atteint <strong>1 939 ppb</strong>. L’anomalie thermique moyenne mondiale atteint <strong>+1,52 °C</strong> selon les séries combinées <strong>NASA GISS (GISTEMP v4)</strong> et <strong>Copernicus Climate Change Service (ERA5)</strong>.
+          </p>
+        </section>
+
+        <section aria-label="Causes Mondiales du Réchauffement Climatique par Secteur" class="mb-10">
+          <h2 class="text-2xl font-serif mb-3">2. Répartition Mondiale des Causes du Réchauffement Climatique (59,1 GtCO₂eq / an — GIEC AR6)</h2>
+          <ul class="list-disc pl-6 space-y-2 text-slate-700">
+            <li><strong>Production d’Électricité &amp; Chaleur (31,4 % — 18,56 GtCO₂e/an)</strong> : Combustion du charbon thermique, du gaz fossile et du fioul pour les réseaux électriques et le chauffage urbain.</li>
+            <li><strong>Industrie Lourde &amp; Procédés Chimiques (23,8 % — 14,07 GtCO₂e/an)</strong> : Sidérurgie (hauts-fourneaux au coke), calcination chimique du clinker en cimenterie (CaCO₃ → CaO + CO₂), pétrochimie, engrais azotés et fuites fugitives d’extraction fossile.</li>
+            <li><strong>Agriculture, Élevage &amp; Déforestation AFOLU (21,6 % — 12,76 GtCO₂e/an)</strong> : Fermentation entérique des ruminants (CH₄), déforestation tropicale (Amazonie, Bassin du Congo, Bornéo), assèchement des tourbières et engrais azotés synthétiques (N₂O).</li>
+            <li><strong>Transports Routiers, Aériens &amp; Maritimes (16,2 % — 9,57 GtCO₂e/an)</strong> : Voitures individuelles et SUV thermiques, fret routier diesel, aviation civile (kérosène et traînées de condensation) et transport maritime au fioul lourd.</li>
+            <li><strong>Déchets Urbains &amp; Eaux Usées (7,0 % — 4,14 GtCO₂e/an)</strong> : Méthane biogène issu des décharges à ciel ouvert sans captage et traitement anaérobie des eaux usées.</li>
+          </ul>
+        </section>
+
+        <section aria-label="Sources Scientifiques Officielles" class="border-t border-slate-200 pt-6 text-xs text-slate-600">
+          <h2 class="text-base font-semibold text-slate-900 mb-2">Sources Scientifiques &amp; Protocoles d’Acquisition :</h2>
+          <p>
+            1. <strong>NOAA Global Monitoring Laboratory (GML)</strong> (Mauna Loa CO₂ &amp; CH₄) ·
+            2. <strong>NASA Goddard Institute for Space Studies (GISS)</strong> (GISTEMP v4 Surface Temperature Anomaly) ·
+            3. <strong>Copernicus Climate Change Service (C3S / ECMWF ERA5 — europa.eu)</strong> ·
+            4. <strong>Commission Européenne (JRC EDGAR &amp; Agence Européenne pour l’Environnement EEA — europa.eu)</strong> ·
+            5. <strong>WWF France (Rapport Planète Vivante / Indice Planète Vivante IPV -73 %)</strong> ·
+            6. <strong>GIEC / IPCC Sixième Rapport d’Évaluation (AR6 WG1 &amp; WG3)</strong> ·
+            7. <strong>Global Carbon Project &amp; World Bank Open Data API</strong> ·
+            8. <strong>Open-Meteo Atmospheric &amp; CAMS Air Quality API</strong>.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <noscript>
+      <div class="max-w-[1360px] mx-auto px-4 py-4 my-4 bg-amber-50 border border-amber-300 text-xs text-amber-900">
+        JavaScript est désactivé dans votre navigateur. La synthèse scientifique complète ci-dessus reste intégralement accessible. Activez JavaScript pour manipuler les graphiques interactifs et le simulateur climatique 2100.
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

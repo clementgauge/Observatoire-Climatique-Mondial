@@ -3,10 +3,10 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <!-- Version Française (Racine /) -->
   <url>
-    <loc>https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/</loc>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/en" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/" />
+    <loc>/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="/" />
+    <xhtml:link rel="alternate" hreflang="en" href="/en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="/" />
     <lastmod>2026-10-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
@@ -14,10 +14,10 @@
 
   <!-- English Version (/en) -->
   <url>
-    <loc>https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/en</loc>
-    <xhtml:link rel="alternate" hreflang="fr" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/en" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/" />
+    <loc>/en</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="/" />
+    <xhtml:link rel="alternate" hreflang="en" href="/en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="/" />
     <lastmod>2026-10-07</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>

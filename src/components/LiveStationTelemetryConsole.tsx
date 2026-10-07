@@ -9,9 +9,10 @@ import { RefreshCw, Radio, Wind, Gauge, Droplets } from 'lucide-react';
 
 interface Props {
   lang: Language;
+  onStationDataChange?: (data: LiveStationTelemetry) => void;
 }
 
-export const LiveStationTelemetryConsole: React.FC<Props> = ({ lang }) => {
+export const LiveStationTelemetryConsole: React.FC<Props> = ({ lang, onStationDataChange }) => {
   const [selectedStationId, setSelectedStationId] = useState<string>(OBSERVATORY_STATIONS[0].id);
   const [telemetry, setTelemetry] = useState<LiveStationTelemetry | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -25,8 +26,11 @@ export const LiveStationTelemetryConsole: React.FC<Props> = ({ lang }) => {
     setLoading(true);
     const data = await fetchStationLiveTelemetry(activeStation);
     setTelemetry(data);
+    if (onStationDataChange) {
+      onStationDataChange(data);
+    }
     setLoading(false);
-  }, [activeStation]);
+  }, [activeStation, onStationDataChange]);
 
   useEffect(() => {
     loadStationData();

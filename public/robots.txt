@@ -6,4 +6,5 @@ User-agent: Googlebot
 Allow: /
 Allow: /en
 
-Sitemap: https://ais-pre-32mvjldvbcmybnebm4eih6-510191462762.europe-west2.run.app/sitemap.xml
+# Sitemap path (resolved relative to your production domain, e.g., Cloudflare Workers / Custom Domain)
+Sitemap: /sitemap.xml
