@@ -6,20 +6,13 @@ export interface Env {
 
 function buildSitemapXml(origin: string): string {
   const cleanOrigin = origin.replace(/\/+$/, '');
-  const today = new Date().toISOString().split('T')[0];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${cleanOrigin}/</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
   </url>
   <url>
     <loc>${cleanOrigin}/en</loc>
-    <lastmod>${today}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
   </url>
 </urlset>`;
 }
@@ -33,14 +26,8 @@ function buildRobotsTxt(origin: string): string {
   const cleanOrigin = origin.replace(/\/+$/, '');
   return `User-agent: *
 Allow: /
-Allow: /en
-Allow: /sitemap.xml
-Allow: /sitemap-main.xml
-Allow: /sitemap.txt
 
 Sitemap: ${cleanOrigin}/sitemap.xml
-Sitemap: ${cleanOrigin}/sitemap-main.xml
-Sitemap: ${cleanOrigin}/sitemap.txt
 `;
 }
 
@@ -50,7 +37,7 @@ export default {
     const origin = url.origin;
     const pathname = (url.pathname.replace(/\/+$/, '') || '/').toLowerCase();
 
-    // 1. Dynamic XML Sitemaps (supports /sitemap.xml, /sitemap-main.xml, /sitemap2.xml, /sitemap_index.xml)
+    // 1. Dynamic XML Sitemaps
     if (
       pathname === '/sitemap.xml' ||
       pathname === '/sitemap-main.xml' ||
@@ -64,21 +51,21 @@ export default {
         status: 200,
         headers: {
           'Content-Type': 'application/xml; charset=utf-8',
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Cache-Control': 'public, max-age=0, must-revalidate',
           'X-Robots-Tag': 'all',
           'Access-Control-Allow-Origin': '*'
         }
       });
     }
 
-    // 2. Dynamic Plain-Text Sitemap (/sitemap.txt) — 100% Google Search Console native format
+    // 2. Dynamic Plain-Text Sitemap (/sitemap.txt)
     if (pathname === '/sitemap.txt') {
       const txt = buildSitemapTxt(origin);
       return new Response(request.method === 'HEAD' ? null : txt, {
         status: 200,
         headers: {
           'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Cache-Control': 'public, max-age=0, must-revalidate',
           'X-Robots-Tag': 'all',
           'Access-Control-Allow-Origin': '*'
         }
@@ -92,7 +79,7 @@ export default {
         status: 200,
         headers: {
           'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Cache-Control': 'public, max-age=0, must-revalidate',
           'Access-Control-Allow-Origin': '*'
         }
       });
@@ -114,7 +101,7 @@ export default {
       );
     }
 
-    // 5. Serve /en and /en/ directly with 200 OK (no 307/308 redirect)
+    // 5. Serve /en and /en/ directly with 200 OK
     if (pathname === '/en') {
       const enUrl = new URL('/en/index.html', request.url);
       const enRes = await env.ASSETS.fetch(new Request(enUrl.toString(), request));
