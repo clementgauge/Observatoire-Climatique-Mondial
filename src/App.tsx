@@ -11,12 +11,13 @@ import {
 } from './services/climateApiService';
 import { generateClimatePdfReport } from './services/pdfReportGenerator';
 import { HistoricalCorrelationChart } from './components/HistoricalCorrelationChart';
-import { GlobalInteractiveClimateMap } from './components/GlobalInteractiveClimateMap';
 import { SectorCausesExplorer } from './components/SectorCausesExplorer';
 import { CountryEmissionsMatrix } from './components/CountryEmissionsMatrix';
 import { LiveStationTelemetryConsole } from './components/LiveStationTelemetryConsole';
+import { DeforestationBiodiversityActionsSection } from './components/DeforestationBiodiversityActionsSection';
 import { PlanetaryBoundariesRadarSection } from './components/PlanetaryBoundariesRadarSection';
 import { TrajectorySimulator2100 } from './components/TrajectorySimulator2100';
+import { SeoClimateKnowledgeBaseSection } from './components/SeoClimateKnowledgeBaseSection';
 import { ScientificMethodologySection } from './components/ScientificMethodologySection';
 import { RefreshCw, ArrowDownRight, FileText, Menu, X, ExternalLink } from 'lucide-react';
 import { Language } from './data/climateDatasets';
@@ -68,12 +69,12 @@ export default function App() {
     document.documentElement.lang = isEn ? 'en' : 'fr';
 
     const title = isEn
-      ? 'Global Climate Observatory — Real-Time Data (NOAA, NASA GISS, IPCC, Copernicus)'
-      : 'Observatoire Climatique Mondial — Données Scientifiques NOAA, NASA GISS, GIEC & Copernicus';
+      ? 'Global Climate Observatory — Real-Time Data, Deforestation, WWF & Policies (NOAA, IPCC, Europa.eu)'
+      : 'Observatoire Climatique Mondial — Réchauffement, Déforestation, Actions WWF & Politiques (NOAA, GIEC)';
 
     const description = isEn
-      ? 'Interactive scientific platform analyzing global warming root causes by sector (59.1 GtCO₂e/yr — IPCC AR6), country emissions (Global Carbon Project), and live NOAA & Open-Meteo telemetry.'
-      : "Observatoire scientifique du réchauffement climatique : données en temps réel (NOAA Mauna Loa, NASA GISS, Copernicus C3S, GIEC AR6, Global Carbon Project) et analyse mondiale des causes par secteur (59,1 GtCO2eq/an).";
+      ? 'Scientific observatory on climate disruption: real-time NOAA & Open-Meteo telemetry, global warming causes (59.1 GtCO₂e/yr), tropical deforestation, WWF wildlife protection, and France/EU/Global policies.'
+      : "Observatoire scientifique du dérèglement climatique : données temps réel (NOAA, NASA GISS, Copernicus, Europa.eu), causes par secteur, déforestation mondiale, actions du WWF pour les animaux et mesures en France et dans le monde.";
 
     document.title = title;
 
@@ -195,12 +196,6 @@ export default function App() {
               {isEn ? 'Telemetry' : 'Télémesure'}
             </a>
             <a
-              href="#carte-mondiale"
-              className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
-            >
-              {isEn ? 'Interactive Map' : 'Carte Mondiale'}
-            </a>
-            <a
               href="#causes-mondiales"
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
@@ -213,10 +208,16 @@ export default function App() {
               {isEn ? 'Country Atlas' : 'Atlas des Pays'}
             </a>
             <a
+              href="#deforestation-wwf-actions"
+              className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
+            >
+              {isEn ? 'Deforestation, WWF & Laws' : 'Déforestation, WWF & Lois'}
+            </a>
+            <a
               href="#analyse-europa-wwf"
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
-              {isEn ? 'Europa.eu & WWF' : 'Europa.eu & WWF'}
+              {isEn ? 'Europa.eu & Biosphere' : 'Europa.eu & Biosphère'}
             </a>
             <a
               href="#sources-scientifiques"
@@ -315,14 +316,14 @@ export default function App() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
-                {isEn ? '04. Live Sensors' : '04. Capteurs en Direct'}
+                {isEn ? '04. Live Sensors' : '04. Capteurs Direct'}
               </a>
               <a
-                href="#simulateur-2100"
+                href="#deforestation-wwf-actions"
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
-                {isEn ? '05. 2100 Simulator' : '05. Simulateur 2100'}
+                {isEn ? '05. Deforestation & WWF' : '05. Déforestation & WWF'}
               </a>
               <a
                 href="#sources-scientifiques"
@@ -370,8 +371,8 @@ export default function App() {
                   className="text-slate-700 hover:text-slate-900 underline underline-offset-2"
                 >
                   {isEn
-                    ? 'Verify Sources (NOAA, NASA GISS, IPCC, Copernicus)'
-                    : 'Vérifier les Sources (NOAA, NASA GISS, GIEC, Copernicus)'}
+                    ? 'Verify Sources (NOAA, NASA GISS, IPCC, Europa.eu, WWF)'
+                    : 'Vérifier les Sources (NOAA, NASA GISS, GIEC, Europa.eu, WWF)'}
                 </a>
                 <span aria-hidden="true">·</span>
                 <button
@@ -400,25 +401,25 @@ export default function App() {
               <div className="lg:col-span-8">
                 <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display text-slate-900 leading-[1.08] tracking-tight">
                   {isEn
-                    ? 'Understanding climate acceleration through physical telemetry and global root-cause analysis.'
-                    : 'Comprendre l’accélération climatique par la mesure physique et l’analyse des causes mondiales.'}
+                    ? 'Understanding climate disruption: atmospheric physics, global deforestation, wildlife protection, and public policies.'
+                    : 'Comprendre le dérèglement climatique : mesure physique, déforestation mondiale, protection du vivant et politiques publiques.'}
                 </h1>
               </div>
               <div className="lg:col-span-4">
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
                   {isEn
-                    ? `Since the pre-industrial era (1850), atmospheric carbon dioxide measured at Mauna Loa (NOAA GML) has risen from 280 ppm to ${atmospheric.co2Ppm.toFixed(2)} ppm. Explore real-time data from public scientific observatories (NASA GISS, Copernicus, IPCC AR6) and the complete global breakdown of emission sources.`
-                    : `Depuis la révolution industrielle (1850), la concentration atmosphérique en dioxyde de carbone mesurée à Mauna Loa (NOAA GML) est passée de 280 ppm à ${atmospheric.co2Ppm.toFixed(2)} ppm. Explorez en temps réel les données issues des observatoires publics (NASA GISS, Copernicus, GIEC AR6) et la répartition mondiale des sources d’émissions.`}
+                    ? `Beyond industrial CO₂ (${atmospheric.co2Ppm.toFixed(2)} ppm at Mauna Loa), global warming is driven by methane, nitrous oxide, and the loss of 10 million hectares of forest every year. Explore real-time public telemetry, WWF wildlife conservation programs, and concrete measures enacted by France, Europe, and the world.`
+                    : `Au-delà du CO₂ industriel (${atmospheric.co2Ppm.toFixed(2)} ppm à Mauna Loa), le dérèglement climatique implique le méthane, la perte de 10 millions d’hectares de forêts par an et le déclin de 73 % de la faune sauvage. Explorez en temps réel les capteurs publics, les actions du WWF pour les animaux et les lois mises en place en France, en Europe et dans le monde.`}
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-900">
                   <a
-                    href="#causes-mondiales"
-                    className="inline-flex items-center gap-1 text-amber-700 hover:underline underline-offset-4"
+                    href="#deforestation-wwf-actions"
+                    className="inline-flex items-center gap-1 text-emerald-700 hover:underline underline-offset-4"
                   >
                     <span>
                       {isEn
-                        ? 'Explore the 5 primary global causes'
-                        : 'Explorer les 5 grandes causes mondiales'}
+                        ? 'Explore Deforestation, WWF Wildlife & France/EU Laws'
+                        : 'Voir Déforestation, Actions WWF & Mesures France/Monde'}
                     </span>
                     <ArrowDownRight className="w-4 h-4" />
                   </a>
@@ -524,33 +525,34 @@ export default function App() {
                 </a>
               </div>
 
-              {/* Metric 4: Annual Anthropogenic Flux */}
+              {/* Metric 4: Global Deforestation & Wildlife LPI */}
               <div className="p-5 sm:p-6 flex flex-col justify-between">
                 <div>
-                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular">
-                    {isEn ? 'Global Anthropogenic Flux' : 'Flux Anthropique Mondial (GES)'}
+                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
+                    <span>{isEn ? 'Deforestation & Fauna' : 'Déforestation & Faune'}</span>
+                    <span className="text-[10px] text-rose-600">FAO / WWF</span>
                   </div>
                   <div className="mt-2 flex items-baseline">
                     <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
-                      {isEn ? '59.10' : '59,10'}
+                      -10,0
                     </span>
                     <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
-                      {isEn ? 'GtCO₂eq / yr' : 'GtCO₂eq / an'}
+                      {isEn ? 'M ha forests / yr' : 'M ha forêts / an'}
                     </span>
                   </div>
-                  <div className="mt-2 text-xs font-mono-tabular text-slate-600">
+                  <div className="mt-2 text-xs font-mono-tabular text-rose-600">
                     {isEn
-                      ? 'REMAINING 1.5 °C BUDGET: ~200 GtCO₂ (~5 yrs)'
-                      : 'BUDGET 1,5 °C RESTANT : ~200 GtCO₂ (~5 ans)'}
+                      ? 'WWF LIVING PLANET INDEX: -73% (1970–2020)'
+                      : 'INDICE PLANÈTE VIVANTE WWF : -73 % (1970–2020)'}
                   </div>
                 </div>
                 <a
-                  href="https://www.ipcc.ch/report/ar6/wg3/"
+                  href="https://www.wwf.fr/rapport-planete-vivante"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
                 >
-                  <span>Source : GIEC / IPCC AR6 & GCP</span>
+                  <span>Source : WWF France & FAO FRA</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -560,9 +562,6 @@ export default function App() {
             <HistoricalCorrelationChart lang={lang} />
           </div>
         </section>
-
-        {/* Interactive Spatial Map: EDGAR Emitters, Live Sensors & WWF Hotspots */}
-        <GlobalInteractiveClimateMap lang={lang} />
 
         {/* Section 2: Global Causes by Sector & Sub-sectors */}
         <SectorCausesExplorer lang={lang} />
@@ -576,13 +575,19 @@ export default function App() {
           onStationDataChange={setActiveStationTelemetry}
         />
 
-        {/* European Commission (EEA / EDGAR europa.eu) & WWF France Living Planet Analytics */}
+        {/* Section 5: Beyond CO2 — Global Deforestation, WWF Wildlife Conservation & France/EU/World Policies */}
+        <DeforestationBiodiversityActionsSection lang={lang} />
+
+        {/* Section 6: European Commission (EEA / EDGAR europa.eu) & WWF France Living Planet Analytics */}
         <PlanetaryBoundariesRadarSection lang={lang} />
 
-        {/* Section 5: 2100 Mitigation Trajectory Simulator */}
+        {/* Section 7: 2100 Mitigation Trajectory Simulator */}
         <TrajectorySimulator2100 lang={lang} />
 
-        {/* Section 6: Verifiable Scientific Sources, Methodology & Live API Audit Table */}
+        {/* Section 8: SEO Structured Knowledge Base & Scientific FAQ */}
+        <SeoClimateKnowledgeBaseSection lang={lang} />
+
+        {/* Section 9: Verifiable Scientific Sources, Methodology & Live API Audit Table */}
         <ScientificMethodologySection
           lang={lang}
           channels={atmospheric.channels}
@@ -595,13 +600,13 @@ export default function App() {
           <div className="max-w-2xl">
             <div className="font-display text-lg text-slate-900">
               {isEn
-                ? 'Global Climate Observatory — Scientific Data & Telemetry'
-                : 'Observatoire Climatique Mondial — Données & Télémesure'}
+                ? 'Global Climate Observatory — Scientific Data, Biodiversity & Telemetry'
+                : 'Observatoire Climatique Mondial — Climat, Déforestation, Biodiversité & Télémesure'}
             </div>
             <p className="mt-1 leading-relaxed">
               {isEn
-                ? 'Aggregated empirical datasets: NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), IPCC Sixth Assessment Report (AR6), Global Carbon Project, World Bank Open Data API, and Open-Meteo.'
-                : 'Données scientifiques agrégées : NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), GIEC (Sixième Rapport d’Évaluation AR6), Global Carbon Project, API Banque Mondiale et Open-Meteo.'}
+                ? 'Aggregated empirical datasets: NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), European Commission (JRC EDGAR & EEA europa.eu), WWF France (Living Planet Report), FAO, IPCC AR6, World Bank API, and Open-Meteo.'
+                : 'Données scientifiques agrégées : NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), Commission Européenne (JRC EDGAR & EEA europa.eu), WWF France (Rapport Planète Vivante), FAO, GIEC AR6, API Banque Mondiale et Open-Meteo.'}
             </p>
           </div>
 
