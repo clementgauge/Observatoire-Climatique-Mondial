@@ -1,0 +1,6 @@
+{
+  "name": "Observatoire Climatique Mondial — Données & Télémesure",
+  "description": "Plateforme scientifique interactive d'analyse du réchauffement climatique, des émissions mondiales de GES par secteur et de télémesure environnementale en temps réel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
