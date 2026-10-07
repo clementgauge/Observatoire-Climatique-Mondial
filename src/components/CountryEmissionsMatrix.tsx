@@ -73,7 +73,7 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
               </span>
               <span className="mx-2" aria-hidden="true">·</span>
               <span>
-                {isEn ? 'Global Carbon Project & World Bank API' : 'Global Carbon Project & API Banque Mondiale'}
+                {isEn ? 'Global Carbon Project & World Bank Data' : 'Global Carbon Project & Données Banque Mondiale'}
               </span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display text-slate-900 mt-2">
@@ -314,13 +314,13 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
                   <div>
                     <div className="text-xs font-semibold text-slate-800">
                       {isEn
-                        ? 'World Bank Public API Time-Series (Real-Time)'
-                        : 'Série Temporelle API Banque Mondiale (Temps Réel)'}
+                        ? 'World Bank Historical Time-Series (Updated)'
+                        : 'Série Temporelle Banque Mondiale (Actualisée)'}
                     </div>
                     <div className="text-[11px] text-slate-500">
                       {isEn
-                        ? 'Indicator EG.FEC.RNEW.ZS — Renewable energy share in total final energy consumption (%)'
-                        : 'Indicateur EG.FEC.RNEW.ZS — Part des énergies renouvelables dans la consommation finale (%)'}
+                        ? 'Renewable energy share in total final energy consumption (%)'
+                        : 'Part des énergies renouvelables dans la consommation finale d’énergie (%)'}
                     </div>
                   </div>
                   {wbLoading && (
@@ -400,10 +400,10 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
             <div className="mt-6 pt-4 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
               <span>
                 {isEn
-                  ? 'Click or tap any country row to query the live API'
-                  : 'Cliquez sur n’importe quel pays du tableau pour interroger l’API'}
+                  ? 'Select any country in the table to view its detailed profile'
+                  : 'Cliquez sur un pays du tableau pour afficher son profil détaillé'}
               </span>
-              <span className="font-mono-tabular">api.worldbank.org/v2</span>
+              <span className="font-mono-tabular">Global Carbon Project · World Bank</span>
             </div>
           </div>
         </div>

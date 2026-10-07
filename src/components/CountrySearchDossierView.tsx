@@ -44,15 +44,28 @@ export const CountrySearchDossierView: React.FC<Props> = ({
 
   const isEn = lang === 'en';
 
-  const loadCountryLive = async () => {
-    setLoadingLive(true);
+  const loadCountryLive = async (silent = false) => {
+    if (!silent) setLoadingLive(true);
     const bundle = await fetchCountryLiveBundle(country.iso3, country.lat, country.lon);
     setLiveData(bundle);
-    setLoadingLive(false);
+    if (!silent) setLoadingLive(false);
   };
 
   useEffect(() => {
-    loadCountryLive();
+    loadCountryLive(false);
+    const interval = setInterval(() => {
+      loadCountryLive(true);
+    }, 60_000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadCountryLive(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [country.iso3, country.lat, country.lon]);
 
   const evolPositive = country.evolutionSince1990Percent > 0;
@@ -98,12 +111,12 @@ export const CountrySearchDossierView: React.FC<Props> = ({
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
-              onClick={loadCountryLive}
+              onClick={() => loadCountryLive(false)}
               disabled={loadingLive}
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-mono-tabular rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingLive ? 'animate-spin' : ''}`} />
-              <span>{isEn ? 'Refresh Live APIs' : 'Actualiser APIs Direct'}</span>
+              <span>{isEn ? 'Update Data' : 'Actualiser les données'}</span>
             </button>
 
             <button
@@ -376,8 +389,8 @@ export const CountrySearchDossierView: React.FC<Props> = ({
                 <div>
                   <div className="text-xs font-mono-tabular uppercase text-emerald-700">
                     {isEn
-                      ? 'Live Public APIs (World Bank & Open-Meteo)'
-                      : 'Séries Temporelles en Direct (API Banque Mondiale & Open-Meteo)'}
+                      ? 'Official Time-Series (World Bank, FAO & Copernicus)'
+                      : 'Séries Temporelles Officielles (Banque Mondiale, FAO & Copernicus)'}
                   </div>
                   <h2 className="text-2xl font-display text-slate-900 mt-1">
                     {chartTab === 'renewables' &&
@@ -447,8 +460,8 @@ export const CountrySearchDossierView: React.FC<Props> = ({
                       <div className="h-56 flex items-center justify-center bg-slate-50 border border-slate-200 text-xs font-mono-tabular text-slate-500">
                         {loadingLive
                           ? isEn
-                            ? 'Querying World Bank & Open-Meteo live endpoints...'
-                            : 'Interrogation en direct des APIs Banque Mondiale & Open-Meteo...'
+                            ? 'Updating national indicators...'
+                            : 'Actualisation des indicateurs nationaux...'
                           : isEn
                           ? `Verified national value: ${
                               chartTab === 'forest'
@@ -563,7 +576,7 @@ export const CountrySearchDossierView: React.FC<Props> = ({
                       ? `LIVE ATMOSPHERIC POLLUTANTS — ${country.capitalEn.toUpperCase()}`
                       : `POLLUANTS ATMOSPHÉRIQUES EN DIRECT — ${country.capitalFr.toUpperCase()}`}
                   </span>
-                  <span className="text-emerald-400">Open-Meteo CAMS API</span>
+                  <span className="text-emerald-400">Copernicus CAMS</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 pt-3 border-t border-slate-800 text-xs font-mono-tabular">
                   <div>

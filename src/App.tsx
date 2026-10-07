@@ -29,17 +29,44 @@ import {
 import { RefreshCw, ArrowDownRight, FileText, Menu, X, ExternalLink, Search, Globe } from 'lucide-react';
 import { Language } from './data/climateDatasets';
 
+const SCROLL_STORAGE_KEY = 'climate_obs_scroll_y';
+const COUNTRY_STORAGE_KEY = 'climate_obs_country_query';
+const LANG_STORAGE_KEY = 'climate_obs_lang';
+
 function detectInitialLanguage(): Language {
   if (typeof window === 'undefined') return 'fr';
   const path = window.location.pathname.toLowerCase();
-  if (path === '/en' || path.endsWith('/en') || path.endsWith('/en/')) {
+  if (path === '/en' || path.endsWith('/en') || path.endsWith('/en/') || path.includes('/en/index.html')) {
     return 'en';
   }
   const params = new URLSearchParams(window.location.search);
-  if (params.get('lang') === 'en') {
-    return 'en';
+  if (params.get('lang') === 'en') return 'en';
+  if (params.get('lang') === 'fr') return 'fr';
+
+  try {
+    const savedLang = sessionStorage.getItem(LANG_STORAGE_KEY);
+    if (savedLang === 'en' || savedLang === 'fr') {
+      return savedLang;
+    }
+  } catch {
+    // ignore storage errors
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.language) {
+    if (navigator.language.toLowerCase().startsWith('en')) {
+      return 'en';
+    }
   }
   return 'fr';
+}
+
+function getInitialCountryQuery(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return sessionStorage.getItem(COUNTRY_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
 }
 
 export default function App() {
@@ -58,15 +85,15 @@ export default function App() {
     tempDateLabel: '2026',
     fetchedAtIso: new Date().toISOString(),
     isLiveApi: false,
-    sourceLabelFr: 'Synchronisation API en cours...',
-    sourceLabelEn: 'Synchronizing public API...',
+    sourceLabelFr: 'Flux NOAA GML (Mauna Loa) & NASA GISS',
+    sourceLabelEn: 'NOAA GML (Mauna Loa) & NASA GISS Stream',
     channels: []
   });
-  const [syncing, setSyncing] = useState<boolean>(true);
+  const [syncing, setSyncing] = useState<boolean>(false);
   const [tonnesEmittedSession, setTonnesEmittedSession] = useState<number>(0);
 
   // Country Search State: empty string = Global View; typed country = Country Dossier View
-  const [countryQuery, setCountryQuery] = useState<string>('');
+  const [countryQuery, setCountryQuery] = useState<string>(getInitialCountryQuery);
   const [selectedOverrideCountry, setSelectedOverrideCountry] =
     useState<CountryFullDossier | null>(null);
   const [dynamicResolvedCountry, setDynamicResolvedCountry] =
@@ -127,15 +154,88 @@ export default function App() {
     setCountryQuery('');
     setSelectedOverrideCountry(null);
     setDynamicResolvedCountry(null);
+    try {
+      sessionStorage.removeItem(COUNTRY_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   };
 
   const handleQuickSelectCountry = (c: CountryFullDossier) => {
+    const label = isEn ? c.nameEn : c.nameFr;
     setSelectedOverrideCountry(c);
-    setCountryQuery(isEn ? c.nameEn : c.nameFr);
+    setCountryQuery(label);
+    try {
+      sessionStorage.setItem(COUNTRY_STORAGE_KEY, label);
+    } catch {
+      // ignore
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Dynamically resolve the real active domain (e.g. Cloudflare workers.dev or custom domain)
+  // Persist countryQuery and language in sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(COUNTRY_STORAGE_KEY, countryQuery);
+      sessionStorage.setItem(LANG_STORAGE_KEY, lang);
+    } catch {
+      // ignore
+    }
+  }, [countryQuery, lang]);
+
+  // Preserve & restore exact scroll position when the user reloads the page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'manual';
+      }
+      const savedY = Number(sessionStorage.getItem(SCROLL_STORAGE_KEY));
+      if (!isNaN(savedY) && savedY > 0) {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior });
+        });
+        const t1 = setTimeout(() => {
+          window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior });
+        }, 60);
+        const t2 = setTimeout(() => {
+          window.scrollTo({ top: savedY, behavior: 'instant' as ScrollBehavior });
+        }, 220);
+        return () => {
+          clearTimeout(t1);
+          clearTimeout(t2);
+        };
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let ticking = false;
+    const saveScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          try {
+            sessionStorage.setItem(SCROLL_STORAGE_KEY, String(Math.round(window.scrollY)));
+          } catch {
+            // ignore
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', saveScroll, { passive: true });
+    window.addEventListener('beforeunload', saveScroll);
+    return () => {
+      window.removeEventListener('scroll', saveScroll);
+      window.removeEventListener('beforeunload', saveScroll);
+    };
+  }, []);
+
+  // Dynamically resolve the real active domain & update bilingual site name / SEO meta tags
   useEffect(() => {
     const configuredSiteUrl = (import.meta.env.VITE_SITE_URL as string | undefined)?.replace(/\/+$/, '');
     const origin = configuredSiteUrl && configuredSiteUrl.length > 4 ? configuredSiteUrl : window.location.origin;
@@ -143,15 +243,22 @@ export default function App() {
 
     document.documentElement.lang = isEn ? 'en' : 'fr';
 
+    const siteName = isEn ? 'Global Climate Observatory' : 'Observatoire Climatique Mondial';
     const title = isEn
-      ? 'Global Climate Observatory — Real-Time Data, Deforestation, WWF & Policies (NOAA, IPCC, Europa.eu)'
-      : 'Observatoire Climatique Mondial — Réchauffement, Déforestation, Actions WWF & Politiques (NOAA, GIEC)';
+      ? 'Global Climate Observatory — Real-Time Global Warming Data, Deforestation, WWF & Climate Policies'
+      : 'Observatoire Climatique Mondial — Réchauffement Climatique, Données Temps Réel, Déforestation & Actions WWF';
 
     const description = isEn
-      ? 'Scientific observatory on climate disruption: real-time NOAA & Open-Meteo telemetry, global warming causes (59.1 GtCO₂e/yr), tropical deforestation, WWF wildlife protection, and France/EU/Global policies.'
-      : "Observatoire scientifique du dérèglement climatique : données temps réel (NOAA, NASA GISS, Copernicus, Europa.eu), causes par secteur, déforestation mondiale, actions du WWF pour les animaux et mesures en France et dans le monde.";
+      ? 'Global Climate Observatory: real-time atmospheric observations (NOAA, NASA GISS, Copernicus), global warming causes (59.1 GtCO₂e/yr), tropical deforestation, WWF wildlife protection, and climate laws across the world.'
+      : "Observatoire Climatique Mondial : données scientifiques en temps réel (NOAA, NASA GISS, Copernicus, Europa.eu), causes par secteur, déforestation mondiale, actions du WWF pour les animaux et mesures en France et dans le monde.";
 
     document.title = title;
+
+    const appNameMeta = document.querySelector('meta[name="application-name"]');
+    if (appNameMeta) appNameMeta.setAttribute('content', siteName);
+
+    const ogSiteName = document.querySelector('meta[property="og:site_name"]');
+    if (ogSiteName) ogSiteName.setAttribute('content', siteName);
 
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) metaDesc.setAttribute('content', description);
@@ -209,15 +316,31 @@ export default function App() {
     setMobileMenuOpen(false);
   };
 
-  const loadAtmospheric = useCallback(async () => {
-    setSyncing(true);
+  const loadAtmospheric = useCallback(async (silent = false) => {
+    if (!silent) setSyncing(true);
     const data = await fetchAtmosphericTelemetry();
     setAtmospheric(data);
-    setSyncing(false);
+    if (!silent) setSyncing(false);
   }, []);
 
+  // Automatically fetch initial data and silently auto-update whenever new data arrives
   useEffect(() => {
-    loadAtmospheric();
+    loadAtmospheric(false);
+    const interval = setInterval(() => {
+      loadAtmospheric(true);
+    }, 60_000);
+    const onVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        loadAtmospheric(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityOrFocus);
+    window.addEventListener('focus', onVisibilityOrFocus);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityOrFocus);
+      window.removeEventListener('focus', onVisibilityOrFocus);
+    };
   }, [loadAtmospheric]);
 
   // Real-time physical counter: 59.1 GtCO2e/yr = ~1,874 tonnes per second globally
@@ -314,7 +437,7 @@ export default function App() {
               onClick={() => handleClearCountrySearch()}
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
             >
-              {isEn ? 'Sources & APIs' : 'Sources & APIs'}
+              {isEn ? 'Scientific Sources' : 'Sources Scientifiques'}
             </a>
           </nav>
 
@@ -439,7 +562,7 @@ export default function App() {
                 }}
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
-                {isEn ? '06. Sources & APIs' : '06. Sources & APIs'}
+                {isEn ? '06. Scientific Sources' : '06. Sources Scientifiques'}
               </a>
             </div>
             <button
@@ -553,8 +676,8 @@ export default function App() {
                 <div className="text-xs font-mono-tabular uppercase text-amber-700">
                   {resolvingDynamic
                     ? isEn
-                      ? 'QUERYING PUBLIC WORLD BANK & OPEN-METEO GEOCODING API...'
-                      : 'INTERROGATION EN DIRECT DES APIS BANQUE MONDIALE & OPEN-METEO...'
+                      ? 'SYNCHRONIZING NATIONAL SCIENTIFIC DATA...'
+                      : 'SYNCHRONISATION DES DONNÉES SCIENTIFIQUES NATIONALES...'
                     : isEn
                     ? 'COUNTRY SEARCH'
                     : 'RECHERCHE DE PAYS'}
@@ -612,12 +735,12 @@ export default function App() {
                 <span aria-hidden="true">·</span>
                 <button
                   type="button"
-                  onClick={loadAtmospheric}
+                  onClick={() => loadAtmospheric(false)}
                   disabled={syncing}
                   className="inline-flex items-center gap-1 text-slate-700 hover:text-slate-900 underline underline-offset-2 cursor-pointer"
                 >
                   <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
-                  <span>{isEn ? 'Sync API' : 'Synchroniser API'}</span>
+                  <span>{isEn ? 'Update Data' : 'Actualiser les données'}</span>
                 </button>
               </div>
               <div className="font-mono-tabular text-slate-700">
@@ -842,8 +965,8 @@ export default function App() {
             </div>
             <p className="mt-1 leading-relaxed">
               {isEn
-                ? 'Aggregated empirical datasets: NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), European Commission (JRC EDGAR & EEA europa.eu), WWF France (Living Planet Report), FAO, IPCC AR6, World Bank API, and Open-Meteo.'
-                : 'Données scientifiques agrégées : NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), Commission Européenne (JRC EDGAR & EEA europa.eu), WWF France (Rapport Planète Vivante), FAO, GIEC AR6, API Banque Mondiale et Open-Meteo.'}
+                ? 'Aggregated empirical datasets: NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), European Commission (JRC EDGAR & EEA europa.eu), WWF France (Living Planet Report), FAO, IPCC AR6, and World Bank Open Data.'
+                : 'Données scientifiques agrégées : NOAA Global Monitoring Laboratory (gml.noaa.gov), NASA GISS (GISTEMP v4), Copernicus Climate Change Service (C3S/ERA5), Commission Européenne (JRC EDGAR & EEA europa.eu), WWF France (Rapport Planète Vivante), FAO, GIEC AR6 et Banque Mondiale.'}
             </p>
           </div>
 

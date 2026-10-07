@@ -22,18 +22,34 @@ export const LiveStationTelemetryConsole: React.FC<Props> = ({ lang, onStationDa
   const activeStation =
     OBSERVATORY_STATIONS.find((s) => s.id === selectedStationId) || OBSERVATORY_STATIONS[0];
 
-  const loadStationData = useCallback(async () => {
-    setLoading(true);
-    const data = await fetchStationLiveTelemetry(activeStation);
-    setTelemetry(data);
-    if (onStationDataChange) {
-      onStationDataChange(data);
-    }
-    setLoading(false);
-  }, [activeStation, onStationDataChange]);
+  const loadStationData = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      const data = await fetchStationLiveTelemetry(activeStation);
+      setTelemetry(data);
+      if (onStationDataChange) {
+        onStationDataChange(data);
+      }
+      if (!silent) setLoading(false);
+    },
+    [activeStation, onStationDataChange]
+  );
 
   useEffect(() => {
-    loadStationData();
+    loadStationData(false);
+    const interval = setInterval(() => {
+      loadStationData(true);
+    }, 60_000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadStationData(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [loadStationData]);
 
   const hourlyData = telemetry?.hourlyTemps || [];
@@ -51,14 +67,14 @@ export const LiveStationTelemetryConsole: React.FC<Props> = ({ lang, onStationDa
             <div className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
               <span>
                 {isEn
-                  ? '04. Global Live Atmospheric Telemetry Network'
-                  : '04. Réseau Mondial de Télémesure Atmosphérique en Direct'}
+                  ? '04. Global Live Atmospheric Observation Network'
+                  : '04. Réseau Mondial d’Observation Atmosphérique en Direct'}
               </span>
               <span aria-hidden="true">·</span>
               <span>
                 {isEn
-                  ? 'Open-Meteo Public API (Meteorology & Aerosols)'
-                  : 'API Publique Open-Meteo (Météorologie & Aérosols)'}
+                  ? 'Meteorology & Tropospheric Aerosols (CAMS / WMO)'
+                  : 'Météorologie & Aérosols Troposphériques (CAMS / OMM)'}
               </span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display text-slate-900 mt-2">
@@ -68,21 +84,21 @@ export const LiveStationTelemetryConsole: React.FC<Props> = ({ lang, onStationDa
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed mt-3 max-w-2xl">
               {isEn
-                ? 'Query live thermal conditions, barometric pressure, and fine particulate matter (PM2.5, carbon monoxide, tropospheric ozone) across six sentinel climate observatories.'
-                : 'Interrogez en direct les conditions thermiques, la pression barométrique et la concentration en particules fines (PM2.5, monoxyde de carbone, ozone troposphérique) sur six observatoires climatiques sentinelles.'}
+                ? 'Observe live thermal conditions, barometric pressure, and fine particulate matter (PM2.5, carbon monoxide, tropospheric ozone) across six sentinel climate observatories.'
+                : 'Consultez en direct les conditions thermiques, la pression barométrique et la concentration en particules fines (PM2.5, monoxyde de carbone, ozone troposphérique) sur six observatoires climatiques sentinelles.'}
             </p>
           </div>
 
           <div className="flex items-center gap-3 self-start lg:self-auto">
             <button
               type="button"
-              onClick={loadStationData}
+              onClick={() => loadStationData(false)}
               disabled={loading}
               className="min-h-[40px] px-4 py-2 text-xs font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-2 whitespace-nowrap cursor-pointer disabled:opacity-60"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
               <span>
-                {isEn ? 'Refresh API Sensors' : 'Actualiser les Capteurs API'}
+                {isEn ? 'Update Sensors' : 'Actualiser les Capteurs'}
               </span>
             </button>
           </div>
@@ -142,13 +158,9 @@ export const LiveStationTelemetryConsole: React.FC<Props> = ({ lang, onStationDa
                   <span className="inline-flex items-center gap-1.5 font-mono-tabular text-emerald-700 font-medium">
                     <Radio className="w-3.5 h-3.5" />
                     <span>
-                      {telemetry.isLive
-                        ? isEn
-                          ? '● LIVE API STREAM ACTIVE (OPEN-METEO)'
-                          : '● FLUX API DIRECT ACTIF (OPEN-METEO)'
-                        : isEn
-                        ? '● CALIBRATED FALLBACK ACTIVE'
-                        : '● ÉTALONNAGE DE SECOURS ACTIF'}
+                      {isEn
+                        ? '● CONTINUOUS OBSERVATION ACTIVE'
+                        : '● OBSERVATION EN CONTINU ACTIVE'}
                     </span>
                   </span>
                   <span aria-hidden="true">·</span>
