@@ -8,10 +8,8 @@ import {
   RefreshCw,
   CloudRain,
   Snowflake,
-  Sun,
   Droplets,
   Wind,
-  Compass,
   ZoomIn,
   ZoomOut,
   Play,
@@ -1203,15 +1201,17 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
   const [liveSyncSuccess, setLiveSyncSuccess] = useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
 
-  // Start focused on France & Europe so the user immediately sees the North (Blue) vs South (Red) surface!
+  // Camera state & refs for zero-lag 60fps mobile touch dragging
   const [rotation, setRotation] = useState<[number, number, number]>([-2.3, -46.6, 0]);
+  const rotationRef = useRef<[number, number, number]>([-2.3, -46.6, 0]);
   const [zoom, setZoom] = useState<number>(3.8);
+  const zoomRef = useRef<number>(3.8);
+
   const [autoRotate, setAutoRotate] = useState<boolean>(false);
   const [activePresetId, setActivePresetId] = useState<string>('france');
   const [layerMode, setLayerMode] = useState<GlobeLayerMode>('temperature');
-  const [showRegionLabels, setShowRegionLabels] = useState<boolean>(true);
 
-  // Inspected surface coordinate (clicked or hovered anywhere on the continuous surface)
+  // Inspected surface coordinate (clicked anywhere on the continuous surface)
   const [inspectedCoord, setInspectedCoord] = useState<{
     lat: number;
     lon: number;
@@ -1227,8 +1227,9 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
   const isDraggingRef = useRef<boolean>(false);
   const pointerDownPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const lastPointerRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const rafIdRef = useRef<number | null>(null);
 
-  // Parse 50m Land & Countries polygons once
+  // Parse 50m Land & Countries polygons once + isolate France polygon for single-pass drawing
   const landGeoJson = useMemo(() => {
     const topo = landTopo50m as any;
     return feature(topo, topo.objects.land) as any;
@@ -1239,7 +1240,46 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
     return feature(topo, topo.objects.countries) as any;
   }, []);
 
+  const franceFeature = useMemo(() => {
+    if (!worldGeoJson?.features) return null;
+    return (
+      worldGeoJson.features.find(
+        (feat: any) =>
+          feat.id === '250' ||
+          feat.properties?.name === 'France' ||
+          feat.properties?.NAME === 'France'
+      ) || null
+    );
+  }, [worldGeoJson]);
+
   const graticule = useMemo(() => geoGraticule10(), []);
+
+  // Pre-pack station vectors & values into contiguous Float32Arrays for ultra-fast mobile interpolation
+  const packedStations = useMemo(() => {
+    const count = nodes.length;
+    const ux = new Float32Array(count);
+    const uy = new Float32Array(count);
+    const uz = new Float32Array(count);
+    const tempC = new Float32Array(count);
+    const soil = new Float32Array(count);
+    const hum = new Float32Array(count);
+    const rain = new Float32Array(count);
+    const snow = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
+      const n = nodes[i];
+      ux[i] = n.ux;
+      uy[i] = n.uy;
+      uz[i] = n.uz;
+      tempC[i] = n.tempC;
+      soil[i] = n.soilMoistureM3;
+      hum[i] = n.humidityPercent;
+      rain[i] = n.precipitationMmH;
+      snow[i] = n.snowCmH;
+    }
+
+    return { count, ux, uy, uz, tempC, soil, hum, rain, snow };
+  }, [nodes]);
 
   // Compute continuous interpolated surface values at any (lat, lon) on Earth
   const evaluateSurfaceAtLatLon = useCallback(
@@ -1264,8 +1304,8 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
           bestDist2 = d2;
           nearest = s;
         }
-        // Sharp localized inverse distance weighting (power p = 2.4)
-        const w = 1 / (d2 * d2 * Math.sqrt(d2));
+        // Fast inverse distance weighting (power p = 3, no Math.sqrt needed)
+        const w = 1 / (d2 * d2 * d2);
         wSum += w;
         tempSum += s.tempC * w;
         humSum += s.humidityPercent * w;
@@ -1415,7 +1455,10 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
   const applyPreset = (preset: CameraPreset) => {
     setAutoRotate(false);
     setActivePresetId(preset.id);
-    setRotation([-preset.lon, -preset.lat, 0]);
+    const nextRot: [number, number, number] = [-preset.lon, -preset.lat, 0];
+    rotationRef.current = nextRot;
+    zoomRef.current = preset.zoom;
+    setRotation(nextRot);
     setZoom(preset.zoom);
   };
 
@@ -1430,430 +1473,378 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
     return { minT, maxT, midT };
   }, [nodes]);
 
-  // Continuous 3D Surface Rendering Loop (Zero Dots — Pure Colored Continental Surface)
-  useEffect(() => {
-    let animationFrameId: number;
+  // Single-frame render function (called on-demand when state changes or during drag/autoRotate)
+  const drawGlobeFrame = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return;
 
-    const renderGlobeSurface = () => {
-      if (autoRotate && !isDraggingRef.current) {
-        setRotation((prev) => [((prev[0] + 0.14 + 180) % 360) - 180, prev[1], prev[2]]);
-      }
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width || 360;
+    const height = rect.height || 380;
+    const isMobileViewport = width < 640;
+    const isInteracting = isDraggingRef.current || autoRotate;
 
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+    // Cap DPR on mobile devices to avoid 9x pixel fill overhead on 3x Retina screens
+    const rawDpr = window.devicePixelRatio || 1;
+    const dpr = isMobileViewport ? Math.min(rawDpr, 1.35) : Math.min(rawDpr, 1.75);
 
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const width = rect.width || 680;
-      const height = rect.height || 580;
+    const targetW = Math.round(width * dpr);
+    const targetH = Math.round(height * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
 
-      if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
-        canvas.width = Math.round(width * dpr);
-        canvas.height = Math.round(height * dpr);
-      }
+    const curRotation = rotationRef.current;
+    const curZoom = zoomRef.current;
 
-      ctx.save();
-      ctx.scale(dpr, dpr);
-      ctx.clearRect(0, 0, width, height);
+    ctx.save();
+    ctx.scale(dpr, dpr);
 
-      const cx = width / 2;
-      const cy = height / 2;
-      const baseRadius = Math.min(width, height) * 0.42;
-      const globeRadius = baseRadius * zoom;
+    // 1. Deep Space Backdrop
+    ctx.fillStyle = '#060B16';
+    ctx.fillRect(0, 0, width, height);
 
-      // 1. Deep Space Backdrop
-      const spaceGrad = ctx.createRadialGradient(
-        cx,
-        cy,
-        baseRadius * 0.2,
-        cx,
-        cy,
-        Math.max(width, height) * 0.75
-      );
-      spaceGrad.addColorStop(0, '#0B1324');
-      spaceGrad.addColorStop(0.65, '#070C18');
-      spaceGrad.addColorStop(1, '#03060C');
-      ctx.fillStyle = spaceGrad;
-      ctx.fillRect(0, 0, width, height);
+    const cx = width / 2;
+    const cy = height / 2;
+    const baseRadius = Math.min(width, height) * (isMobileViewport ? 0.45 : 0.42);
+    const globeRadius = baseRadius * curZoom;
 
-      // 2. Atmospheric 3D Limb Glow
-      const limbGrad = ctx.createRadialGradient(
-        cx,
-        cy,
-        globeRadius * 0.94,
-        cx,
-        cy,
-        globeRadius * 1.12
-      );
-      limbGrad.addColorStop(0, 'rgba(56, 189, 248, 0.28)');
-      limbGrad.addColorStop(0.5, 'rgba(14, 165, 233, 0.10)');
-      limbGrad.addColorStop(1, 'rgba(14, 165, 233, 0)');
-      ctx.beginPath();
-      ctx.arc(cx, cy, globeRadius * 1.12, 0, Math.PI * 2);
-      ctx.fillStyle = limbGrad;
-      ctx.fill();
+    // 2. Atmospheric 3D Limb Glow
+    const limbGrad = ctx.createRadialGradient(
+      cx,
+      cy,
+      globeRadius * 0.95,
+      cx,
+      cy,
+      globeRadius * 1.1
+    );
+    limbGrad.addColorStop(0, 'rgba(56, 189, 248, 0.25)');
+    limbGrad.addColorStop(1, 'rgba(14, 165, 233, 0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, globeRadius * 1.1, 0, Math.PI * 2);
+    ctx.fillStyle = limbGrad;
+    ctx.fill();
 
-      // 3. Configure Orthographic 3D Projection
-      const projection = geoOrthographic()
-        .scale(globeRadius)
-        .translate([cx, cy])
-        .rotate(rotation)
-        .clipAngle(90);
+    // 3. Configure Orthographic 3D Projection
+    const projection = geoOrthographic()
+      .scale(globeRadius)
+      .translate([cx, cy])
+      .rotate(curRotation)
+      .clipAngle(90);
 
-      const pathGenerator = geoPath(projection, ctx);
+    const pathGenerator = geoPath(projection, ctx);
 
-      // 4. Deep Ocean 3D Sphere Base
-      const oceanGrad = ctx.createRadialGradient(
-        cx - globeRadius * 0.28,
-        cy - globeRadius * 0.28,
-        globeRadius * 0.05,
-        cx,
-        cy,
-        globeRadius
-      );
-      oceanGrad.addColorStop(0, '#0F294A');
-      oceanGrad.addColorStop(0.55, '#0A1C36');
-      oceanGrad.addColorStop(1, '#040C1A');
+    // 4. Deep Ocean 3D Sphere Base
+    const oceanGrad = ctx.createRadialGradient(
+      cx - globeRadius * 0.28,
+      cy - globeRadius * 0.28,
+      globeRadius * 0.05,
+      cx,
+      cy,
+      globeRadius
+    );
+    oceanGrad.addColorStop(0, '#0F294A');
+    oceanGrad.addColorStop(0.6, '#0A1C36');
+    oceanGrad.addColorStop(1, '#040C1A');
 
-      ctx.beginPath();
-      pathGenerator({ type: 'Sphere' });
-      ctx.fillStyle = oceanGrad;
-      ctx.fill();
+    ctx.beginPath();
+    pathGenerator({ type: 'Sphere' });
+    ctx.fillStyle = oceanGrad;
+    ctx.fill();
 
-      // 5. Ocean Graticule Grid
+    // 5. Ocean Graticule Grid (skip while dragging on mobile for maximum frame rate)
+    if (!isMobileViewport || !isInteracting) {
       ctx.beginPath();
       pathGenerator(graticule);
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
-      ctx.lineWidth = 0.6;
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+      ctx.lineWidth = 0.55;
       ctx.stroke();
+    }
 
-      // 6. Generate Continuous Meteorological Surface Field on Offscreen Raster Buffer
-      const GRID_SIZE = 156;
-      if (!offscreenSurfaceRef.current) {
-        offscreenSurfaceRef.current = document.createElement('canvas');
-        offscreenSurfaceRef.current.width = GRID_SIZE;
-        offscreenSurfaceRef.current.height = GRID_SIZE;
-      }
-      const offCanvas = offscreenSurfaceRef.current;
-      const offCtx = offCanvas.getContext('2d');
+    // 6. Generate Continuous Meteorological Surface Field on Adaptive Offscreen Raster Buffer
+    // Adaptive resolution: ultra-fast 56px during touch drag, 76px on mobile idle, 104px on desktop idle
+    const GRID_SIZE = isInteracting
+      ? isMobileViewport
+        ? 54
+        : 68
+      : isMobileViewport
+      ? 78
+      : 108;
 
-      if (offCtx && nodes.length > 0) {
-        const imgData = offCtx.createImageData(GRID_SIZE, GRID_SIZE);
-        const data = imgData.data;
+    if (!offscreenSurfaceRef.current) {
+      offscreenSurfaceRef.current = document.createElement('canvas');
+    }
+    const offCanvas = offscreenSurfaceRef.current;
+    if (offCanvas.width !== GRID_SIZE || offCanvas.height !== GRID_SIZE) {
+      offCanvas.width = GRID_SIZE;
+      offCanvas.height = GRID_SIZE;
+    }
+    const offCtx = offCanvas.getContext('2d');
 
-        // Precompute inverse orthographic rotation angles
-        // In d3.geoOrthographic, rotation is [lambda0, phi0, 0] in degrees
-        const lambda0 = (-rotation[0] * Math.PI) / 180;
-        const phi0 = (-rotation[1] * Math.PI) / 180;
-        const cosPhi0 = Math.cos(phi0);
-        const sinPhi0 = Math.sin(phi0);
-        const cosLambda0 = Math.cos(lambda0);
-        const sinLambda0 = Math.sin(lambda0);
+    if (offCtx && packedStations.count > 0) {
+      const imgData = offCtx.createImageData(GRID_SIZE, GRID_SIZE);
+      const data = imgData.data;
 
-        // Visible viewport bounds on screen
-        const minScreenX = Math.max(0, cx - globeRadius);
-        const maxScreenX = Math.min(width, cx + globeRadius);
-        const minScreenY = Math.max(0, cy - globeRadius);
-        const maxScreenY = Math.min(height, cy + globeRadius);
+      const lambda0 = (-curRotation[0] * Math.PI) / 180;
+      const phi0 = (-curRotation[1] * Math.PI) / 180;
+      const cosPhi0 = Math.cos(phi0);
+      const sinPhi0 = Math.sin(phi0);
+      const cosLambda0 = Math.cos(lambda0);
+      const sinLambda0 = Math.sin(lambda0);
 
-        const spanX = Math.max(1, maxScreenX - minScreenX);
-        const spanY = Math.max(1, maxScreenY - minScreenY);
+      const minScreenX = Math.max(0, cx - globeRadius);
+      const maxScreenX = Math.min(width, cx + globeRadius);
+      const minScreenY = Math.max(0, cy - globeRadius);
+      const maxScreenY = Math.min(height, cy + globeRadius);
 
-        const { minT, maxT } = franceThermalBounds;
-        const tempSpread = Math.max(4, maxT - minT);
+      const spanX = Math.max(1, maxScreenX - minScreenX);
+      const spanY = Math.max(1, maxScreenY - minScreenY);
 
-        for (let gy = 0; gy < GRID_SIZE; gy++) {
-          const sy = minScreenY + ((gy + 0.5) / GRID_SIZE) * spanY;
-          const ny = (cy - sy) / globeRadius; // Up is +Y in orthographic space
+      const { minT, maxT } = franceThermalBounds;
+      const tempSpread = Math.max(4, maxT - minT);
 
-          for (let gx = 0; gx < GRID_SIZE; gx++) {
-            const sx = minScreenX + ((gx + 0.5) / GRID_SIZE) * spanX;
-            const nx = (sx - cx) / globeRadius;
+      const {
+        count: stCount,
+        ux: stUx,
+        uy: stUy,
+        uz: stUz,
+        tempC: stTemp,
+        soil: stSoil,
+        hum: stHum,
+        rain: stRain,
+        snow: stSnow
+      } = packedStations;
 
-            const r2 = nx * nx + ny * ny;
-            const pIdx = (gy * GRID_SIZE + gx) * 4;
+      const invGlobeRadius = 1 / globeRadius;
 
-            if (r2 > 1.0) {
-              data[pIdx + 3] = 0;
-              continue;
+      for (let gy = 0; gy < GRID_SIZE; gy++) {
+        const sy = minScreenY + ((gy + 0.5) / GRID_SIZE) * spanY;
+        const ny = (cy - sy) * invGlobeRadius;
+        const ny2 = ny * ny;
+
+        for (let gx = 0; gx < GRID_SIZE; gx++) {
+          const sx = minScreenX + ((gx + 0.5) / GRID_SIZE) * spanX;
+          const nx = (sx - cx) * invGlobeRadius;
+
+          const r2 = nx * nx + ny2;
+          const pIdx = (gy * GRID_SIZE + gx) * 4;
+
+          if (r2 > 1.0) {
+            data[pIdx + 3] = 0;
+            continue;
+          }
+
+          const nz = Math.sqrt(1.0 - r2);
+
+          const sinPhi = nz * sinPhi0 + ny * cosPhi0;
+          const cosPhiCosDL = nz * cosPhi0 - ny * sinPhi0;
+          const cosPhiSinDL = nx;
+
+          const ux = cosPhiCosDL * cosLambda0 - cosPhiSinDL * sinLambda0;
+          const uy = cosPhiCosDL * sinLambda0 + cosPhiSinDL * cosLambda0;
+          const uz = sinPhi;
+
+          let wSum = 0;
+          let tempVal = 0;
+          let soilVal = 0;
+          let humVal = 0;
+          let rainVal = 0;
+          let snowVal = 0;
+
+          // Tight typed-array loop without Math.sqrt
+          for (let i = 0; i < stCount; i++) {
+            const dot = ux * stUx[i] + uy * stUy[i] + uz * stUz[i];
+            const d2 = 2.00002 - 2.0 * dot;
+            const w = 1.0 / (d2 * d2 * d2);
+            wSum += w;
+            tempVal += stTemp[i] * w;
+            soilVal += stSoil[i] * w;
+            humVal += stHum[i] * w;
+            rainVal += stRain[i] * w;
+            snowVal += stSnow[i] * w;
+          }
+
+          const invWSum = 1.0 / wSum;
+          const tInterp = tempVal * invWSum;
+          const soilInterp = soilVal * invWSum;
+          const humInterp = humVal * invWSum;
+          const rainInterp = rainVal * invWSum;
+          const snowInterp = snowVal * invWSum;
+
+          let r = 30;
+          let g = 64;
+          let b = 120;
+
+          if (layerMode === 'temperature') {
+            let effectiveTemp = tInterp;
+            if (curZoom >= 2.0 && tInterp >= minT - 4 && tInterp <= maxT + 4) {
+              const norm = (tInterp - minT) / tempSpread;
+              effectiveTemp = 6 + norm * 21;
             }
-
-            const nz = Math.sqrt(1.0 - r2);
-
-            // Convert view-space (nx, ny, nz) on the unit sphere to Earth-fixed 3D unit vector (ux, uy, uz)
-            // Forward orthographic around (lambda0, phi0):
-            // nx = cos(phi)*sin(lambda - lambda0)
-            // ny = cos(phi0)*sin(phi) - sin(phi0)*cos(phi)*cos(lambda - lambda0)
-            // nz = sin(phi0)*sin(phi) + cos(phi0)*cos(phi)*cos(lambda - lambda0)
-            // Therefore inverse is:
-            const sinPhi = nz * sinPhi0 + ny * cosPhi0;
-            const cosPhiCosDL = nz * cosPhi0 - ny * sinPhi0;
-            const cosPhiSinDL = nx;
-
-            const ux = cosPhiCosDL * cosLambda0 - cosPhiSinDL * sinLambda0;
-            const uy = cosPhiCosDL * sinLambda0 + cosPhiSinDL * cosLambda0;
-            const uz = sinPhi;
-
-            // Interpolate all stations using fast spherical chord distance squared: d2 = 2 - 2*dot
-            let wSum = 0;
-            let tempVal = 0;
-            let soilVal = 0;
-            let humVal = 0;
-            let rainVal = 0;
-            let snowVal = 0;
-
-            for (let i = 0; i < nodes.length; i++) {
-              const st = nodes[i];
-              const dot = ux * st.ux + uy * st.uy + uz * st.uz;
-              const d2 = Math.max(0.000015, 2.0 - 2.0 * dot);
-              // Sharper localization when zoomed into France so North/South/Alps boundaries are crisp
-              const w = 1.0 / (d2 * d2 * Math.sqrt(d2));
-              wSum += w;
-              tempVal += st.tempC * w;
-              soilVal += st.soilMoistureM3 * w;
-              humVal += st.humidityPercent * w;
-              rainVal += st.precipitationMmH * w;
-              snowVal += st.snowCmH * w;
+            const [cr, cg, cb] = lerpColor(effectiveTemp, THERMAL_STOPS);
+            r = cr;
+            g = cg;
+            b = cb;
+          } else if (layerMode === 'moisture') {
+            const [cr, cg, cb] = lerpColor(soilInterp, MOISTURE_STOPS);
+            r = cr;
+            g = cg;
+            b = cb;
+          } else if (layerMode === 'precipitation') {
+            if (snowInterp > 0.08 || tInterp <= -0.8) {
+              const snowIntensity = Math.min(1, snowInterp * 1.2 + (tInterp < -2 ? 0.6 : 0.3));
+              r = Math.round(125 + snowIntensity * 115);
+              g = Math.round(211 + snowIntensity * 38);
+              b = 252;
+            } else if (rainInterp > 0.12) {
+              const rainIntensity = Math.min(1, rainInterp / 1.8);
+              r = Math.round(56 - rainIntensity * 28);
+              g = Math.round(140 - rainIntensity * 55);
+              b = Math.round(235 + rainIntensity * 20);
+            } else {
+              const aridity = Math.max(0, Math.min(1, (65 - humInterp) / 45));
+              r = Math.round(65 + aridity * 165);
+              g = Math.round(95 - aridity * 15);
+              b = Math.round(85 - aridity * 55);
             }
-
-            const tInterp = tempVal / wSum;
-            const soilInterp = soilVal / wSum;
-            const humInterp = humVal / wSum;
-            const rainInterp = rainVal / wSum;
-            const snowInterp = snowVal / wSum;
-
-            let r = 30;
-            let g = 64;
-            let b = 120;
-
-            if (layerMode === 'temperature') {
-              // When zoomed into France/Europe, normalize contrast so the North of France is vividly Blue and the South of France is vividly Red
-              let effectiveTemp = tInterp;
-              if (zoom >= 2.0 && tInterp >= minT - 4 && tInterp <= maxT + 4) {
-                const norm = (tInterp - minT) / tempSpread; // 0 in North (coldest), 1 in South (warmest)
-                effectiveTemp = 6 + norm * 21; // Maps North -> ~6°C (Vivid Blue) and South -> ~27°C (Vivid Red)
-              }
-              const [cr, cg, cb] = lerpColor(effectiveTemp, THERMAL_STOPS);
+          } else {
+            if (snowInterp > 0.08 || tInterp <= -1.0) {
+              r = 186;
+              g = 230;
+              b = 253;
+            } else if (rainInterp > 0.15) {
+              r = 37;
+              g = 99;
+              b = 235;
+            } else if (soilInterp <= 0.16 || humInterp <= 44) {
+              const [cr, cg, cb] = lerpColor(Math.max(21, tInterp), THERMAL_STOPS);
               r = cr;
               g = cg;
               b = cb;
-            } else if (layerMode === 'moisture') {
+            } else {
               const [cr, cg, cb] = lerpColor(soilInterp, MOISTURE_STOPS);
               r = cr;
               g = cg;
               b = cb;
-            } else if (layerMode === 'precipitation') {
-              if (snowInterp > 0.08 || tInterp <= -0.8) {
-                // Snow / Ice surface: Crisp Cyan-White
-                const snowIntensity = Math.min(1, snowInterp * 1.2 + (tInterp < -2 ? 0.6 : 0.3));
-                r = Math.round(125 + snowIntensity * 115);
-                g = Math.round(211 + snowIntensity * 38);
-                b = 252;
-              } else if (rainInterp > 0.12) {
-                // Active Rain surface: Vivid Cobalt-Blue
-                const rainIntensity = Math.min(1, rainInterp / 1.8);
-                r = Math.round(56 - rainIntensity * 28);
-                g = Math.round(140 - rainIntensity * 55);
-                b = Math.round(235 + rainIntensity * 20);
-              } else {
-                // Dry / No-precipitation surface: Warm Amber/Ochre according to aridity
-                const aridity = Math.max(0, Math.min(1, (65 - humInterp) / 45));
-                r = Math.round(65 + aridity * 165);
-                g = Math.round(95 - aridity * 15);
-                b = Math.round(85 - aridity * 55);
-              }
-            } else {
-              // Combined Synthesis Surface:
-              if (snowInterp > 0.08 || tInterp <= -1.0) {
-                r = 186;
-                g = 230;
-                b = 253; // Snow White-Cyan
-              } else if (rainInterp > 0.15) {
-                r = 37;
-                g = 99;
-                b = 235; // Rain Cobalt Blue
-              } else if (soilInterp <= 0.16 || humInterp <= 44) {
-                // Dry & Warm surface (Red-Orange)
-                const [cr, cg, cb] = lerpColor(Math.max(21, tInterp), THERMAL_STOPS);
-                r = cr;
-                g = cg;
-                b = cb;
-              } else {
-                // Humid / Temperate surface
-                const [cr, cg, cb] = lerpColor(soilInterp, MOISTURE_STOPS);
-                r = cr;
-                g = cg;
-                b = cb;
-              }
             }
-
-            // Apply 3D spherical Lambertian limb shading so the colored surface looks genuinely 3D
-            const shade = 0.58 + 0.42 * nz;
-            data[pIdx] = Math.min(255, Math.round(r * shade));
-            data[pIdx + 1] = Math.min(255, Math.round(g * shade));
-            data[pIdx + 2] = Math.min(255, Math.round(b * shade));
-            data[pIdx + 3] = 242;
           }
-        }
 
-        offCtx.putImageData(imgData, 0, 0);
-
-        // 7. Clip strictly to the Continental Landmasses (`landGeoJson`) and paint the smooth interpolated surface!
-        ctx.save();
-        ctx.beginPath();
-        pathGenerator(landGeoJson);
-        ctx.clip();
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(offCanvas, minScreenX, minScreenY, spanX, spanY);
-        ctx.restore();
-      }
-
-      // 8. Draw Crisp Country Borders & Highlight France's Border on Top of the Colored Surface
-      if (worldGeoJson?.features) {
-        for (const feat of worldGeoJson.features) {
-          const isFrancePoly =
-            feat.id === '250' ||
-            feat.properties?.name === 'France' ||
-            feat.properties?.NAME === 'France';
-
-          ctx.beginPath();
-          pathGenerator(feat);
-
-          if (isFrancePoly) {
-            ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = zoom >= 2.0 ? 2.2 : 1.4;
-            ctx.stroke();
-          } else {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-            ctx.lineWidth = 0.7;
-            ctx.stroke();
-          }
+          const shade = 0.58 + 0.42 * nz;
+          data[pIdx] = Math.min(255, (r * shade) | 0);
+          data[pIdx + 1] = Math.min(255, (g * shade) | 0);
+          data[pIdx + 2] = Math.min(255, (b * shade) | 0);
+          data[pIdx + 3] = 242;
         }
       }
 
-      // 9. Optional Clean Regional Typography Overlay (No Dots — Just Subtle Floating Region Names & Values)
-      if (showRegionLabels) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(cx, cy, globeRadius, 0, Math.PI * 2);
-        ctx.clip();
+      offCtx.putImageData(imgData, 0, 0);
 
-        const keyRegions =
-          zoom >= 2.2
-            ? [
-                { lat: 50.3, lon: 2.8, labelFr: 'NORD', labelEn: 'NORTH' },
-                { lat: 48.3, lon: -3.2, labelFr: 'BRETAGNE', labelEn: 'BRITTANY' },
-                { lat: 48.8, lon: 2.35, labelFr: 'PARIS', labelEn: 'PARIS' },
-                { lat: 48.6, lon: 7.4, labelFr: 'ALSACE', labelEn: 'ALSACE' },
-                { lat: 45.8, lon: 6.7, labelFr: 'ALPES', labelEn: 'ALPS' },
-                { lat: 44.8, lon: -0.5, labelFr: 'AQUITAINE', labelEn: 'AQUITAINE' },
-                { lat: 43.3, lon: 2.2, labelFr: 'SUD / OCCITANIE', labelEn: 'SOUTH / OCCITANIE' },
-                { lat: 43.5, lon: 5.5, labelFr: 'PROVENCE', labelEn: 'PROVENCE' },
-                { lat: 42.1, lon: 9.0, labelFr: 'CORSE', labelEn: 'CORSICA' }
-              ]
-            : [
-                { lat: 46.6, lon: 2.3, labelFr: 'FRANCE', labelEn: 'FRANCE' },
-                { lat: 40.0, lon: -4.0, labelFr: 'ESPAGNE', labelEn: 'SPAIN' },
-                { lat: 64.0, lon: 16.0, labelFr: 'SCANDINAVIE', labelEn: 'SCANDINAVIA' },
-                { lat: 23.0, lon: 12.0, labelFr: 'SAHARA', labelEn: 'SAHARA' },
-                { lat: -4.0, lon: -60.0, labelFr: 'AMAZONIE', labelEn: 'AMAZONIA' },
-                { lat: 62.0, lon: 105.0, labelFr: 'SIBÉRIE', labelEn: 'SIBERIA' },
-                { lat: 72.0, lon: -42.0, labelFr: 'GROENLAND', labelEn: 'GREENLAND' }
-              ];
-
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        for (const reg of keyRegions) {
-          const proj = projection([reg.lon, reg.lat]);
-          if (!proj) continue;
-          const [px, py] = proj;
-
-          const surf = evaluateSurfaceAtLatLon(reg.lat, reg.lon, nodes);
-          const title = isEn ? reg.labelEn : reg.labelFr;
-          const valText =
-            layerMode === 'temperature'
-              ? `${surf.tempC > 0 ? '+' : ''}${surf.tempC}°C`
-              : layerMode === 'moisture'
-              ? `${surf.humidityPercent}% HR`
-              : surf.snowCmH > 0.05 || surf.tempC <= -1
-              ? isEn
-                ? `Snow ${surf.tempC}°C`
-                : `Neige ${surf.tempC}°C`
-              : surf.precipitationMmH > 0.1
-              ? isEn
-                ? `Rain ${surf.precipitationMmH}mm`
-                : `Pluie ${surf.precipitationMmH}mm`
-              : `${surf.tempC}°C · ${surf.humidityPercent}%`;
-
-          ctx.font = '700 10px Inter, system-ui, sans-serif';
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-          ctx.shadowBlur = 4;
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillText(title, px, py - 6);
-
-          ctx.font = '600 11px JetBrains Mono, monospace';
-          ctx.fillStyle = '#F8FAFC';
-          ctx.fillText(valText, px, py + 7);
-        }
-
-        ctx.restore();
-      }
-
-      // 10. Subtle Crosshair Ring at the Currently Inspected Surface Location
-      if (inspectedCoord) {
-        const proj = projection([inspectedCoord.lon, inspectedCoord.lat]);
-        if (proj) {
-          const [ix, iy] = proj;
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(ix, iy, 9, 0, Math.PI * 2);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-          ctx.restore();
-        }
-      }
-
-      // 11. 3D Outer Sphere Rim Highlight
+      // 7. Clip strictly to Continental Landmasses and paint the smooth interpolated surface
+      ctx.save();
       ctx.beginPath();
-      ctx.arc(cx, cy, globeRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(125, 211, 252, 0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      pathGenerator(landGeoJson);
+      ctx.clip();
 
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(offCanvas, minScreenX, minScreenY, spanX, spanY);
       ctx.restore();
-      animationFrameId = requestAnimationFrame(renderGlobeSurface);
-    };
+    }
 
-    animationFrameId = requestAnimationFrame(renderGlobeSurface);
-    return () => cancelAnimationFrame(animationFrameId);
+    // 8. Single-batch Country Borders + Highlighted France Border (2 draw calls instead of 241!)
+    if (worldGeoJson) {
+      ctx.beginPath();
+      pathGenerator(worldGeoJson);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.34)';
+      ctx.lineWidth = 0.65;
+      ctx.stroke();
+    }
+
+    if (franceFeature) {
+      ctx.beginPath();
+      pathGenerator(franceFeature);
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = curZoom >= 2.0 ? 2.1 : 1.3;
+      ctx.stroke();
+    }
+
+    // 9. Subtle Crosshair Ring at the Currently Inspected Surface Location (No text on map!)
+    if (inspectedCoord) {
+      const proj = projection([inspectedCoord.lon, inspectedCoord.lat]);
+      if (proj) {
+        const [ix, iy] = proj;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(ix, iy, 8, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.92)';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // 10. 3D Outer Sphere Rim Highlight
+    ctx.beginPath();
+    ctx.arc(cx, cy, globeRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.48)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    ctx.restore();
   }, [
-    rotation,
-    zoom,
     autoRotate,
     landGeoJson,
     worldGeoJson,
+    franceFeature,
     graticule,
-    nodes,
+    packedStations,
     layerMode,
-    showRegionLabels,
     franceThermalBounds,
-    inspectedCoord,
-    evaluateSurfaceAtLatLon,
-    isEn
+    inspectedCoord
   ]);
 
-  // Pointer Handlers: Drag to rotate 3D globe OR click anywhere on the surface to inspect that exact zone
+  // Keep refs synced when state changes and trigger a single on-demand draw
+  useEffect(() => {
+    rotationRef.current = rotation;
+    zoomRef.current = zoom;
+    drawGlobeFrame();
+  }, [rotation, zoom, drawGlobeFrame]);
+
+  // Redraw on window resize
+  useEffect(() => {
+    const handleResize = () => drawGlobeFrame();
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, [drawGlobeFrame]);
+
+  // Run animation loop ONLY when autoRotate is explicitly active
+  useEffect(() => {
+    if (!autoRotate) return;
+    let animId: number;
+    const step = () => {
+      if (!isDraggingRef.current) {
+        const nextLon = ((rotationRef.current[0] + 0.18 + 180) % 360) - 180;
+        rotationRef.current = [nextLon, rotationRef.current[1], 0];
+        drawGlobeFrame();
+      }
+      animId = requestAnimationFrame(step);
+    };
+    animId = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(animId);
+      setRotation([...rotationRef.current]);
+    };
+  }, [autoRotate, drawGlobeFrame]);
+
+  // Pointer Handlers: Zero-React-re-render dragging for silky smooth mobile touch performance
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     isDraggingRef.current = true;
-    setAutoRotate(false);
+    if (autoRotate) setAutoRotate(false);
     pointerDownPosRef.current = { x: e.clientX, y: e.clientY };
     lastPointerRef.current = { x: e.clientX, y: e.clientY };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -1862,46 +1853,63 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
     const dy = e.clientY - lastPointerRef.current.y;
     lastPointerRef.current = { x: e.clientX, y: e.clientY };
 
-    const sensitivity = 0.26 / Math.sqrt(zoom);
-    setRotation((prev) => [
-      prev[0] + dx * sensitivity,
-      Math.max(-82, Math.min(82, prev[1] - dy * sensitivity)),
+    const sensitivity = 0.28 / Math.sqrt(zoomRef.current);
+    rotationRef.current = [
+      rotationRef.current[0] + dx * sensitivity,
+      Math.max(-82, Math.min(82, rotationRef.current[1] - dy * sensitivity)),
       0
-    ]);
-    setActivePresetId('custom');
+    ];
+
+    if (rafIdRef.current === null) {
+      rafIdRef.current = requestAnimationFrame(() => {
+        rafIdRef.current = null;
+        drawGlobeFrame();
+      });
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+
     const moveDist = Math.hypot(
       e.clientX - pointerDownPosRef.current.x,
       e.clientY - pointerDownPosRef.current.y
     );
-    // If click (not drag), invert 3D orthographic projection to sample the exact surface coordinate!
-    if (moveDist < 6) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
 
-      const width = rect.width || 680;
-      const height = rect.height || 580;
-      const cx = width / 2;
-      const cy = height / 2;
-      const globeRadius = Math.min(width, height) * 0.42 * zoom;
+    if (moveDist >= 6) {
+      setRotation([...rotationRef.current]);
+      setActivePresetId('custom');
+      drawGlobeFrame();
+      return;
+    }
 
-      const projection = geoOrthographic()
-        .scale(globeRadius)
-        .translate([cx, cy])
-        .rotate(rotation)
-        .clipAngle(90);
+    // If tap/click (not drag), invert 3D orthographic projection to sample the exact surface coordinate
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
 
-      const inverted = projection.invert?.([mx, my]);
-      if (inverted && !isNaN(inverted[0]) && !isNaN(inverted[1])) {
-        const [lon, lat] = inverted;
-        setInspectedCoord(evaluateSurfaceAtLatLon(lat, lon, nodes));
-      }
+    const width = rect.width || 360;
+    const height = rect.height || 380;
+    const isMobileViewport = width < 640;
+    const cx = width / 2;
+    const cy = height / 2;
+    const globeRadius =
+      Math.min(width, height) * (isMobileViewport ? 0.45 : 0.42) * zoomRef.current;
+
+    const projection = geoOrthographic()
+      .scale(globeRadius)
+      .translate([cx, cy])
+      .rotate(rotationRef.current)
+      .clipAngle(90);
+
+    const inverted = projection.invert?.([mx, my]);
+    if (inverted && !isNaN(inverted[0]) && !isNaN(inverted[1])) {
+      const [lon, lat] = inverted;
+      setInspectedCoord(evaluateSurfaceAtLatLon(lat, lon, nodes));
     }
   };
 
@@ -1919,46 +1927,40 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
   return (
     <section
       id="planete-terre-3d"
-      className="py-12 sm:py-16 lg:py-20 border-t border-slate-200 bg-white"
+      className="py-6 sm:py-14 lg:py-20 border-t border-slate-200 bg-white"
     >
-      <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-slate-200">
+      <div className="max-w-[1360px] mx-auto px-3 sm:px-6 lg:px-8">
+        {/* Compact Header on Mobile, Full Editorial Header on Desktop */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3 sm:gap-6 pb-3 sm:pb-8 border-b border-slate-200">
           <div className="max-w-3xl">
-            <div className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
+            <div className="text-[11px] sm:text-xs text-slate-500 flex flex-wrap items-center gap-2">
               <span className="font-mono-tabular text-emerald-700 font-semibold">
                 {isEn
-                  ? '● 3D CONTINUOUS SURFACE THERMOGRAPHY & HYDROLOGY'
-                  : '● CARTOGRAPHIE SURFACIQUE 3D CONTINUE — TEMPÉRATURES, SÉCHERESSE & PRÉCIPITATIONS'}
-              </span>
-              <span aria-hidden="true">·</span>
-              <span>
-                {isEn
-                  ? 'Open-Meteo Live Surface Interpolation'
-                  : 'Interpolation Surfacique Continue en Temps Réel'}
+                  ? '● 3D EARTH SURFACE'
+                  : '● PLANÈTE TERRE 3D — TEMPS RÉEL'}
               </span>
               {lastSyncTime && (
                 <>
                   <span aria-hidden="true">·</span>
                   <span className="font-mono-tabular text-slate-600">
-                    {isEn ? `Synced at ${lastSyncTime}` : `Synchronisé à ${lastSyncTime}`}
+                    {lastSyncTime}
                   </span>
                 </>
               )}
             </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display text-slate-900 mt-2 leading-tight">
+            <h2 className="text-xl sm:text-4xl lg:text-5xl font-display text-slate-900 mt-1 sm:mt-2 leading-tight">
               {isEn
-                ? '3D Planet Earth Surface Map: Warm South in Red, Cold North in Blue, Dry & Humid Surfaces'
-                : 'Planète Terre en 3D : coloration continue des surfaces (Sud chaud en rouge, Nord froid en bleu, zones sèches et humides)'}
+                ? '3D Planet Earth Surface Map'
+                : 'Carte 3D de la Terre en Temps Réel'}
             </h2>
-            <p className="text-slate-600 text-sm sm:text-base leading-relaxed mt-3">
+            <p className="hidden sm:block text-slate-600 text-sm sm:text-base leading-relaxed mt-3">
               {isEn
-                ? 'Continuous meteorological surface shading across France and all continents without discrete dots: warmer Southern regions are colored in orange-red, colder Northern and Alpine zones in deep blue-cyan, dry soil surfaces in ochre-red, and humid/rainy surfaces in emerald and cobalt blue.'
-                : 'Visualisation par surfaces continues sur toute la France et les continents (sans points isolés) : lorsqu’il fait chaud et sec au Sud de la France, toute la surface méridionale est coloriée en rouge-orangé tandis que le Nord plus froid et humide est colorié en bleu.'}
+                ? 'Continuous meteorological surface shading across France and all continents without text clutter: warmer Southern regions are colored in orange-red, colder Northern and Alpine zones in deep blue-cyan, dry soil surfaces in ochre-red, and humid/rainy surfaces in emerald and cobalt blue.'
+                : 'Visualisation par surfaces continues sur toute la France et les continents : lorsqu’il fait chaud et sec au Sud de la France, toute la surface méridionale est coloriée en rouge-orangé tandis que le Nord plus froid et humide est colorié en bleu.'}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
+          <div className="hidden sm:flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
             <button
               type="button"
               onClick={() => {
@@ -1974,8 +1976,8 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
               <Crosshair className="w-3.5 h-3.5" />
               <span>
                 {isEn
-                  ? 'Center on France Surface (North/South)'
-                  : 'Centrer sur la Surface de la France'}
+                  ? 'Center on France Surface'
+                  : 'Centrer sur la France'}
               </span>
             </button>
 
@@ -1986,13 +1988,13 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
               className="min-h-[40px] px-4 py-2 text-xs font-medium bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-60"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingLive ? 'animate-spin' : ''}`} />
-              <span>{isEn ? 'Refresh Live Surface' : 'Actualiser la Surface en Direct'}</span>
+              <span>{isEn ? 'Refresh Live Surface' : 'Actualiser en Direct'}</span>
             </button>
           </div>
         </div>
 
-        {/* 4-Column Direct Surface Comparison Bar (North France Blue vs South France Red, Brittany Rain/Humid, Alps Snow) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-slate-200 bg-[#F8FAFC] divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mt-8">
+        {/* 4-Column Direct Surface Comparison Bar — Desktop/Tablet only so Mobile goes straight to the 3D Map */}
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 border border-slate-200 bg-[#F8FAFC] divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mt-6">
           <button
             type="button"
             onClick={() => {
@@ -2098,157 +2100,188 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
           </button>
         </div>
 
-        {/* Control Deck: Continuous Surface Layer Selector + Camera Presets */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 py-4 border-b border-slate-200">
-          {/* Layer Mode Selector */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-mono-tabular uppercase text-slate-500 mr-1">
-              {isEn ? 'Surface Coloring:' : 'Coloration de la Surface :'}
-            </span>
+        {/* Compact Mobile-Friendly Controls: Layer Mode + Quick Camera Presets */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 py-3 sm:py-4 border-b border-slate-200">
+          {/* Layer Mode Selector — Horizontal scroll on mobile so it takes 1 line */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 sm:pb-0 sm:flex-wrap">
             {(
               [
                 {
                   id: 'temperature',
+                  shortFr: 'Températures',
+                  shortEn: 'Temperature',
                   labelFr: 'Températures (Chaud = Rouge / Froid = Bleu)',
                   labelEn: 'Temperature (Warm = Red / Cold = Blue)'
                 },
                 {
                   id: 'moisture',
-                  labelFr: 'Zones Sèches (Rouge/Ocre) vs Humides (Bleu/Vert)',
-                  labelEn: 'Dry Surfaces (Red) vs Humid Surfaces (Blue/Green)'
+                  shortFr: 'Sec vs Humide',
+                  shortEn: 'Dry vs Humid',
+                  labelFr: 'Zones Sèches vs Humides',
+                  labelEn: 'Dry vs Humid Surfaces'
                 },
                 {
                   id: 'precipitation',
-                  labelFr: 'Surfaces de Pluie (Bleu) & Neige (Blanc-Cyan)',
-                  labelEn: 'Rain Surfaces (Blue) & Snow Surfaces (White-Cyan)'
+                  shortFr: 'Pluie & Neige',
+                  shortEn: 'Rain & Snow',
+                  labelFr: 'Pluie & Neige',
+                  labelEn: 'Rain & Snow Surfaces'
                 },
                 {
                   id: 'combined',
+                  shortFr: 'Synthèse',
+                  shortEn: 'Combined',
                   labelFr: 'Synthèse Météo Continue',
-                  labelEn: 'Combined Continuous Surface'
+                  labelEn: 'Combined Surface'
                 }
-              ] as { id: GlobeLayerMode; labelFr: string; labelEn: string }[]
+              ] as {
+                id: GlobeLayerMode;
+                shortFr: string;
+                shortEn: string;
+                labelFr: string;
+                labelEn: string;
+              }[]
             ).map((mode) => (
               <button
                 key={mode.id}
                 type="button"
                 onClick={() => setLayerMode(mode.id)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   layerMode === mode.id
                     ? 'bg-slate-900 text-white border-slate-900'
                     : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                 }`}
               >
-                {isEn ? mode.labelEn : mode.labelFr}
+                <span className="sm:hidden">{isEn ? mode.shortEn : mode.shortFr}</span>
+                <span className="hidden sm:inline">{isEn ? mode.labelEn : mode.labelFr}</span>
               </button>
             ))}
           </div>
 
-          {/* Regional Camera Presets */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-mono-tabular uppercase text-slate-500 mr-1">
-              {isEn ? 'View:' : 'Cadrage :'}
-            </span>
-            {CAMERA_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => applyPreset(preset)}
-                className={`px-2.5 py-1.5 text-xs font-mono-tabular rounded-md border transition-colors cursor-pointer ${
-                  activePresetId === preset.id
-                    ? 'bg-emerald-700 text-white border-emerald-700 font-semibold'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                {isEn ? preset.labelEn : preset.labelFr}
-              </button>
-            ))}
+          {/* Regional Camera Presets — Horizontal scroll on mobile */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 sm:pb-0 sm:flex-wrap">
+            {CAMERA_PRESETS.map((preset) => {
+              const shortLabelFr =
+                preset.id === 'france'
+                  ? 'France'
+                  : preset.id === 'europe'
+                  ? 'Europe'
+                  : preset.id === 'world'
+                  ? 'Globe 3D'
+                  : preset.id === 'arctic'
+                  ? 'Arctique'
+                  : preset.id === 'americas'
+                  ? 'Amériques'
+                  : 'Afrique & Asie';
+              const shortLabelEn =
+                preset.id === 'france'
+                  ? 'France'
+                  : preset.id === 'europe'
+                  ? 'Europe'
+                  : preset.id === 'world'
+                  ? '3D Globe'
+                  : preset.id === 'arctic'
+                  ? 'Arctic'
+                  : preset.id === 'americas'
+                  ? 'Americas'
+                  : 'Africa & Asia';
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                  className={`px-2.5 py-1.5 text-xs font-mono-tabular rounded-md border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    activePresetId === preset.id
+                      ? 'bg-emerald-700 text-white border-emerald-700 font-semibold'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="sm:hidden">{isEn ? shortLabelEn : shortLabelFr}</span>
+                  <span className="hidden sm:inline">{isEn ? preset.labelEn : preset.labelFr}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Main 12-Column Interactive 3D Surface Globe + Surface Telemetry Inspector */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-start">
-          {/* Left 7 Columns: Continuous Colored Surface 3D Earth Viewport */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 mt-3 sm:mt-6 items-start">
+          {/* Left 7 Columns: Pure Visual 3D Earth Viewport (Zero Text on Map) */}
           <div className="lg:col-span-7 bg-[#050A14] border border-slate-800 rounded-xl overflow-hidden relative shadow-lg">
-            {/* Top Overlay Controls inside 3D Viewport */}
-            <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-              <div className="bg-slate-900/85 backdrop-blur-xs border border-slate-700/80 px-3 py-1.5 rounded-md text-[11px] font-mono-tabular text-slate-200 flex items-center gap-2">
-                <Compass className="w-3.5 h-3.5 text-sky-400" />
-                <span>
-                  {isEn
-                    ? `Click any surface or drag to rotate · Zoom ×${zoom.toFixed(1)}`
-                    : `Cliquez sur n’importe quelle surface ou glissez · Zoom ×${zoom.toFixed(1)}`}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1.5 pointer-events-auto">
-                <button
-                  type="button"
-                  onClick={() => setShowRegionLabels((prev) => !prev)}
-                  className={`px-2.5 py-1.5 border rounded-md text-xs font-mono-tabular cursor-pointer ${
-                    showRegionLabels
-                      ? 'bg-slate-800 text-white border-slate-600'
-                      : 'bg-slate-900/80 text-slate-400 border-slate-800'
-                  }`}
-                >
-                  {isEn ? 'Names' : 'Noms'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAutoRotate((prev) => !prev)}
-                  className="px-2.5 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-100 border border-slate-700 rounded-md text-xs font-mono-tabular flex items-center gap-1 cursor-pointer"
-                >
-                  {autoRotate ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                  <span>{autoRotate ? (isEn ? 'Pause' : 'Pause') : isEn ? 'Rotate' : 'Tourner'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setZoom((z) => Math.min(5.5, Number((z + 0.5).toFixed(2))))}
-                  className="p-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-100 border border-slate-700 rounded-md cursor-pointer"
-                  title={isEn ? 'Zoom In' : 'Zoomer'}
-                  aria-label={isEn ? 'Zoom In' : 'Zoomer'}
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setZoom((z) => Math.max(0.85, Number((z - 0.5).toFixed(2))))}
-                  className="p-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-100 border border-slate-700 rounded-md cursor-pointer"
-                  title={isEn ? 'Zoom Out' : 'Dézoomer'}
-                  aria-label={isEn ? 'Zoom Out' : 'Dézoomer'}
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </button>
-              </div>
+            {/* Minimal Icon-Only Corner Controls on Map (No text overlaying the map) */}
+            <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const frPreset = CAMERA_PRESETS.find((p) => p.id === 'france');
+                  if (frPreset) applyPreset(frPreset);
+                }}
+                className="p-2 bg-slate-900/85 hover:bg-slate-800 text-emerald-400 border border-slate-700/80 rounded-md cursor-pointer"
+                title={isEn ? 'Center on France' : 'Centrer sur la France'}
+                aria-label={isEn ? 'Center on France' : 'Centrer sur la France'}
+              >
+                <Crosshair className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setAutoRotate((prev) => !prev)}
+                className="p-2 bg-slate-900/85 hover:bg-slate-800 text-slate-100 border border-slate-700/80 rounded-md cursor-pointer"
+                title={autoRotate ? (isEn ? 'Pause' : 'Pause') : isEn ? 'Rotate' : 'Tourner'}
+                aria-label={autoRotate ? (isEn ? 'Pause' : 'Pause') : isEn ? 'Rotate' : 'Tourner'}
+              >
+                {autoRotate ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextZ = Math.min(5.5, Number((zoomRef.current + 0.5).toFixed(2)));
+                  zoomRef.current = nextZ;
+                  setZoom(nextZ);
+                }}
+                className="p-2 bg-slate-900/85 hover:bg-slate-800 text-slate-100 border border-slate-700/80 rounded-md cursor-pointer"
+                title={isEn ? 'Zoom In' : 'Zoomer'}
+                aria-label={isEn ? 'Zoom In' : 'Zoomer'}
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextZ = Math.max(0.85, Number((zoomRef.current - 0.5).toFixed(2)));
+                  zoomRef.current = nextZ;
+                  setZoom(nextZ);
+                }}
+                className="p-2 bg-slate-900/85 hover:bg-slate-800 text-slate-100 border border-slate-700/80 rounded-md cursor-pointer"
+                title={isEn ? 'Zoom Out' : 'Dézoomer'}
+                aria-label={isEn ? 'Zoom Out' : 'Dézoomer'}
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* 3D Continuous Surface HTML5 Canvas */}
+            {/* 3D Continuous Surface HTML5 Canvas (Pure Cartography — Zero Text Overlay) */}
             <canvas
               ref={canvasRef}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
-              onPointerLeave={() => {
+              onPointerCancel={() => {
                 isDraggingRef.current = false;
               }}
-              className="w-full h-[460px] sm:h-[540px] lg:h-[580px] block cursor-grab active:cursor-grabbing touch-none"
+              className="w-full h-[350px] sm:h-[520px] lg:h-[580px] block cursor-grab active:cursor-grabbing touch-none select-none"
             />
 
             {/* Continuous Color Gradient Scale Bar at Bottom of 3D Viewport */}
-            <div className="bg-slate-950/95 border-t border-slate-800 px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-200">
+            <div className="bg-slate-950 border-t border-slate-800 px-3 sm:px-4 py-2.5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 text-xs text-slate-200">
               {layerMode === 'temperature' && (
-                <div className="flex-1 flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-mono-tabular text-slate-300">
-                    <span>
-                      {isEn ? '❄ COLD / NORTH / ALPS (BLUE)' : '❄ FROID / NORD / MONTAGNE (BLEU)'}
-                    </span>
-                    <span>{isEn ? 'MILD (YELLOW)' : 'TEMPÉRÉ (JAUNE)'}</span>
-                    <span>
-                      {isEn ? '☀ WARM / SOUTH / ARID (RED)' : '☀ CHAUD / SUD / MÉDITERRANÉE (ROUGE)'}
-                    </span>
+                <div className="flex-1 flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono-tabular text-slate-300">
+                    <span>{isEn ? '❄ COLD (BLUE)' : '❄ FROID (BLEU)'}</span>
+                    <span>{isEn ? 'MILD' : 'TEMPÉRÉ'}</span>
+                    <span>{isEn ? '☀ WARM (RED)' : '☀ CHAUD (ROUGE)'}</span>
                   </div>
                   <div
-                    className="h-2.5 w-full rounded-full border border-slate-700"
+                    className="h-2 sm:h-2.5 w-full rounded-full border border-slate-700"
                     style={{
                       background:
                         'linear-gradient(90deg, #0EA5E9 0%, #1D4ED8 22%, #38BDF8 42%, #FACC15 58%, #F97316 78%, #DC2626 92%, #991B1B 100%)'
@@ -2258,18 +2291,14 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
               )}
 
               {layerMode === 'moisture' && (
-                <div className="flex-1 flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between text-[11px] font-mono-tabular text-slate-300">
-                    <span>
-                      {isEn ? '☀ DRY SURFACE / DROUGHT (RED-ORANGE)' : '☀ SURFACE SÈCHE / SÉCHERESSE (ROUGE-OCRE)'}
-                    </span>
-                    <span>{isEn ? 'BALANCED (GREEN)' : 'ÉQUILIBRE (VERT)'}</span>
-                    <span>
-                      {isEn ? '💧 HUMID / SATURATED SURFACE (BLUE)' : '💧 SURFACE HUMIDE / SATURÉE (BLEU)'}
-                    </span>
+                <div className="flex-1 flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono-tabular text-slate-300">
+                    <span>{isEn ? '☀ DRY (RED)' : '☀ SEC (ROUGE)'}</span>
+                    <span>{isEn ? 'BALANCED' : 'ÉQUILIBRE'}</span>
+                    <span>{isEn ? '💧 HUMID (BLUE)' : '💧 HUMIDE (BLEU)'}</span>
                   </div>
                   <div
-                    className="h-2.5 w-full rounded-full border border-slate-700"
+                    className="h-2 sm:h-2.5 w-full rounded-full border border-slate-700"
                     style={{
                       background:
                         'linear-gradient(90deg, #B91C1C 0%, #EA580C 28%, #F59E0B 48%, #10B981 70%, #0EA5E9 88%, #1D4ED8 100%)'
@@ -2279,46 +2308,35 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
               )}
 
               {(layerMode === 'precipitation' || layerMode === 'combined') && (
-                <div className="flex-1 flex flex-wrap items-center gap-4 text-xs">
+                <div className="flex-1 flex flex-wrap items-center gap-3 text-[11px]">
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="w-4 h-2.5 rounded-xs bg-[#DC2626]" />
-                    <span>{isEn ? 'Hot / Dry Surface' : 'Surface Chaude / Sèche'}</span>
+                    <span className="w-3.5 h-2 rounded-xs bg-[#DC2626]" />
+                    <span>{isEn ? 'Dry' : 'Sec'}</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="w-4 h-2.5 rounded-xs bg-[#10B981]" />
-                    <span>{isEn ? 'Humid Surface' : 'Surface Humide'}</span>
+                    <span className="w-3.5 h-2 rounded-xs bg-[#10B981]" />
+                    <span>{isEn ? 'Humid' : 'Humide'}</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="w-4 h-2.5 rounded-xs bg-[#2563EB]" />
-                    <span>{isEn ? 'Active Rain Surface' : 'Surface sous la Pluie'}</span>
+                    <span className="w-3.5 h-2 rounded-xs bg-[#2563EB]" />
+                    <span>{isEn ? 'Rain' : 'Pluie'}</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="w-4 h-2.5 rounded-xs bg-[#BAE6FD]" />
-                    <span>{isEn ? 'Snow / Freezing Surface' : 'Surface Enneigée / Gel'}</span>
+                    <span className="w-3.5 h-2 rounded-xs bg-[#BAE6FD]" />
+                    <span>{isEn ? 'Snow' : 'Neige'}</span>
                   </span>
                 </div>
               )}
-
-              <div className="text-[11px] font-mono-tabular text-emerald-400 shrink-0">
-                {liveSyncSuccess
-                  ? isEn
-                    ? '● LIVE OPEN-METEO SURFACE'
-                    : '● SURFACE TEMPS RÉEL OPEN-METEO'
-                  : isEn
-                  ? '● CONTINUOUS SURFACE'
-                  : '● SURFACE CONTINUE'}
-              </div>
             </div>
           </div>
 
-          {/* Right 5 Columns: Live Surface Inspector & Regional Comparison Table */}
-          <div className="lg:col-span-5 flex flex-col gap-5">
+          {/* Right 5 Columns: Live Surface Inspector (Compact on Mobile, Full on Desktop) */}
+          <div className="lg:col-span-5 flex flex-col gap-4 sm:gap-5">
             {/* Inspected Surface Coordinate Card */}
-            <div className="border border-slate-200 bg-[#F8FAFC] p-5 sm:p-6 rounded-xl">
-              <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
-                <div>
-                  <div className="text-xs font-mono-tabular text-slate-500">
-                    {isEn ? 'INSPECTED SURFACE ZONE' : 'ZONE DE SURFACE INSPECTÉE'} ·{' '}
+            <div className="border border-slate-200 bg-[#F8FAFC] p-3.5 sm:p-6 rounded-xl">
+              <div className="flex items-start justify-between gap-2 border-b border-slate-200 pb-3 sm:pb-4">
+                <div className="min-w-0">
+                  <div className="text-[11px] font-mono-tabular text-slate-500">
                     {currentSurface.lat >= 0
                       ? `${currentSurface.lat.toFixed(1)}°N`
                       : `${Math.abs(currentSurface.lat).toFixed(1)}°S`}
@@ -2327,20 +2345,15 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
                       ? `${currentSurface.lon.toFixed(1)}°E`
                       : `${Math.abs(currentSurface.lon).toFixed(1)}°W`}
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-display text-slate-900 mt-1">
+                  <h3 className="text-base sm:text-2xl font-display text-slate-900 mt-0.5 truncate">
                     {isEn
                       ? currentSurface.nearestNode.nameEn
                       : currentSurface.nearestNode.nameFr}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {isEn
-                      ? currentSurface.nearestNode.regionEn
-                      : currentSurface.nearestNode.regionFr}
-                  </p>
                 </div>
 
                 <span
-                  className={`px-2.5 py-1 text-xs font-mono-tabular font-semibold border rounded-md whitespace-nowrap ${
+                  className={`px-2 py-0.5 sm:px-2.5 sm:py-1 text-[11px] sm:text-xs font-mono-tabular font-semibold border rounded-md whitespace-nowrap shrink-0 ${
                     currentSurface.tempC >= 20
                       ? 'bg-red-50 text-red-800 border-red-200'
                       : currentSurface.tempC <= 11
@@ -2350,27 +2363,27 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
                 >
                   {currentSurface.tempC >= 20
                     ? isEn
-                      ? 'Warm Surface (Red)'
-                      : 'Surface Chaude (Rouge)'
+                      ? 'Warm (Red)'
+                      : 'Chaud (Rouge)'
                     : currentSurface.tempC <= 11
                     ? isEn
-                      ? 'Cold Surface (Blue)'
-                      : 'Surface Froide (Bleu)'
+                      ? 'Cold (Blue)'
+                      : 'Froid (Bleu)'
                     : isEn
-                    ? 'Temperate Surface'
-                    : 'Surface Tempérée'}
+                    ? 'Temperate'
+                    : 'Tempéré'}
                 </span>
               </div>
 
-              {/* 4 Physical Surface Metrics */}
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                <div className="bg-white border border-slate-200 p-3.5 rounded-lg">
-                  <div className="text-[11px] font-mono-tabular uppercase text-slate-400 flex items-center justify-between">
-                    <span>{isEn ? 'Surface Temperature' : 'Température de Surface'}</span>
+              {/* 4 Physical Surface Metrics — Compact 2x2 grid */}
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3 sm:mt-4">
+                <div className="bg-white border border-slate-200 p-2.5 sm:p-3.5 rounded-lg">
+                  <div className="text-[10px] sm:text-[11px] font-mono-tabular uppercase text-slate-400 flex items-center justify-between">
+                    <span>{isEn ? 'Temperature' : 'Température'}</span>
                     <Thermometer className="w-3.5 h-3.5 text-slate-400" />
                   </div>
                   <div
-                    className={`text-2xl font-mono-tabular font-bold mt-1 ${
+                    className={`text-lg sm:text-2xl font-mono-tabular font-bold mt-0.5 sm:mt-1 ${
                       currentSurface.tempC >= 20
                         ? 'text-red-600'
                         : currentSurface.tempC <= 11
@@ -2380,78 +2393,50 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
                   >
                     {currentSurface.tempC > 0 ? `+${currentSurface.tempC}` : currentSurface.tempC} °C
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
-                    {currentSurface.tempC >= 20
-                      ? isEn
-                        ? 'Colored in red-orange on the map'
-                        : 'Coloriée en rouge-orangé sur la carte'
-                      : isEn
-                      ? 'Colored in blue-cyan on the map'
-                      : 'Coloriée en bleu sur la carte'}
-                  </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 p-3.5 rounded-lg">
-                  <div className="text-[11px] font-mono-tabular uppercase text-slate-400 flex items-center justify-between">
-                    <span>{isEn ? 'Surface Humidity' : 'Humidité de Surface'}</span>
+                <div className="bg-white border border-slate-200 p-2.5 sm:p-3.5 rounded-lg">
+                  <div className="text-[10px] sm:text-[11px] font-mono-tabular uppercase text-slate-400 flex items-center justify-between">
+                    <span>{isEn ? 'Humidity' : 'Humidité'}</span>
                     <Droplets className="w-3.5 h-3.5 text-emerald-600" />
                   </div>
-                  <div className="text-2xl font-mono-tabular font-bold text-slate-900 mt-1">
+                  <div className="text-lg sm:text-2xl font-mono-tabular font-bold text-slate-900 mt-0.5 sm:mt-1">
                     {currentSurface.humidityPercent} %
-                  </div>
-                  <div className="text-[11px] font-mono-tabular text-slate-600 mt-0.5">
-                    {isEn
-                      ? `Soil: ${currentSurface.soilMoistureM3} m³/m³ (${
-                          currentSurface.soilMoistureM3 <= 0.16 ? 'Dry' : 'Humid'
-                        })`
-                      : `Sol : ${currentSurface.soilMoistureM3} m³/m³ (${
-                          currentSurface.soilMoistureM3 <= 0.16 ? 'Zone Sèche' : 'Zone Humide'
-                        })`}
                   </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 p-3.5 rounded-lg">
-                  <div className="text-[11px] font-mono-tabular uppercase text-slate-400 flex items-center justify-between">
-                    <span>{isEn ? 'Rain / Snow Surface' : 'Pluie / Neige en Surface'}</span>
+                <div className="bg-white border border-slate-200 p-2.5 sm:p-3.5 rounded-lg">
+                  <div className="text-[10px] sm:text-[11px] font-mono-tabular uppercase text-slate-400 flex items-center justify-between">
+                    <span>{isEn ? 'Rain / Snow' : 'Pluie / Neige'}</span>
                     {currentSurface.snowCmH > 0.05 || currentSurface.tempC <= -1 ? (
                       <Snowflake className="w-3.5 h-3.5 text-sky-500" />
                     ) : (
                       <CloudRain className="w-3.5 h-3.5 text-blue-600" />
                     )}
                   </div>
-                  <div className="text-xl font-mono-tabular font-bold text-slate-900 mt-1">
+                  <div className="text-sm sm:text-xl font-mono-tabular font-bold text-slate-900 mt-0.5 sm:mt-1">
                     {currentSurface.snowCmH > 0.05
-                      ? `${currentSurface.snowCmH} cm/h (${isEn ? 'Snow' : 'Neige'})`
+                      ? `${currentSurface.snowCmH} cm/h`
                       : currentSurface.precipitationMmH > 0.05
-                      ? `${currentSurface.precipitationMmH} mm/h (${isEn ? 'Rain' : 'Pluie'})`
-                      : isEn
-                      ? '0.0 mm/h (Dry sky)'
-                      : '0,0 mm/h (Temps sec)'}
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
-                    {isEn
-                      ? 'Interpolated from live Open-Meteo grid'
-                      : 'Interpolé en direct sur la surface'}
+                      ? `${currentSurface.precipitationMmH} mm/h`
+                      : '0,0 mm/h'}
                   </div>
                 </div>
 
-                <div className="bg-white border border-slate-200 p-3.5 rounded-lg">
-                  <div className="text-[11px] font-mono-tabular uppercase text-slate-400 flex items-center justify-between">
-                    <span>{isEn ? 'Surface Wind' : 'Vent en Surface'}</span>
+                <div className="bg-white border border-slate-200 p-2.5 sm:p-3.5 rounded-lg">
+                  <div className="text-[10px] sm:text-[11px] font-mono-tabular uppercase text-slate-400 flex items-center justify-between">
+                    <span>{isEn ? 'Wind' : 'Vent'}</span>
                     <Wind className="w-3.5 h-3.5 text-slate-500" />
                   </div>
-                  <div className="text-2xl font-mono-tabular font-bold text-slate-900 mt-1">
+                  <div className="text-lg sm:text-2xl font-mono-tabular font-bold text-slate-900 mt-0.5 sm:mt-1">
                     {currentSurface.windKmh} km/h
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
-                    {isEn ? 'Click anywhere on globe to sample' : 'Cliquez sur le globe pour sonder'}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Quick Regional Surface Selector (France North/South/West/Alps + World Surfaces) */}
-            <div className="border border-slate-200 bg-white rounded-xl overflow-hidden">
+            {/* Regional Surface List — Hidden on small mobile screens to keep the mobile map experience ultra-light and fast */}
+            <div className="hidden sm:block border border-slate-200 bg-white rounded-xl overflow-hidden">
               <div className="px-4 py-3 bg-[#F8FAFC] border-b border-slate-200 flex items-center justify-between">
                 <span className="text-xs font-mono-tabular uppercase font-semibold text-slate-700">
                   {isEn
@@ -2460,7 +2445,7 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
                 </span>
               </div>
 
-              <div className="max-h-[290px] overflow-y-auto divide-y divide-slate-100">
+              <div className="max-h-[260px] overflow-y-auto divide-y divide-slate-100">
                 {nodes.map((node) => {
                   const isCold = node.tempC <= 12;
                   const isHot = node.tempC >= 20;
@@ -2470,11 +2455,15 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
                       type="button"
                       onClick={() => {
                         setAutoRotate(false);
-                        setRotation([-node.lon, -node.lat, 0]);
-                        if (node.isFrance && zoom < 3.5) {
+                        const nextRot: [number, number, number] = [-node.lon, -node.lat, 0];
+                        rotationRef.current = nextRot;
+                        setRotation(nextRot);
+                        if (node.isFrance && zoomRef.current < 3.5) {
+                          zoomRef.current = 4.1;
                           setZoom(4.1);
                           setActivePresetId('france');
-                        } else if (!node.isFrance && zoom > 2.8) {
+                        } else if (!node.isFrance && zoomRef.current > 2.8) {
+                          zoomRef.current = 1.8;
                           setZoom(1.8);
                           setActivePresetId('custom');
                         }
@@ -2497,27 +2486,10 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
                             {isEn ? node.nameEn : node.nameFr}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-500 truncate mt-0.5">
-                          {node.soilMoistureM3 <= 0.16
-                            ? isEn
-                              ? `Dry surface (${node.humidityPercent}% HR)`
-                              : `Surface sèche (${node.humidityPercent}% HR)`
-                            : node.snowCmH > 0 || node.tempC < 0
-                            ? isEn
-                              ? `Snow / Freezing surface`
-                              : `Surface froide / enneigée`
-                            : node.precipitationMmH > 0.1
-                            ? isEn
-                              ? `Rainy surface (${node.precipitationMmH} mm/h)`
-                              : `Surface pluvieuse (${node.precipitationMmH} mm/h)`
-                            : isEn
-                            ? `Humid surface (${node.humidityPercent}% HR)`
-                            : `Surface humide (${node.humidityPercent}% HR)`}
-                        </div>
                       </div>
 
-                      <div className="text-right font-mono-tabular shrink-0">
-                        <div
+                      <div className="text-right font-mono-tabular shrink-0 flex items-center gap-2">
+                        <span
                           className={`text-xs font-bold ${
                             isHot
                               ? 'text-red-600'
@@ -2527,10 +2499,10 @@ export const PlanetEarth3DSection: React.FC<Props> = ({ lang }) => {
                           }`}
                         >
                           {node.tempC > 0 ? `+${node.tempC}` : node.tempC}°C
-                        </div>
-                        <div className="text-[10px] text-slate-400">
+                        </span>
+                        <span className="text-[10px] text-slate-400">
                           {node.humidityPercent}% HR
-                        </div>
+                        </span>
                       </div>
                     </button>
                   );
