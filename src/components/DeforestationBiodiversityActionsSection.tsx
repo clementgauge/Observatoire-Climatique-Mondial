@@ -214,8 +214,8 @@ const CLIMATE_POLICY_ACTIONS: PolicyAction[] = [
       'Power grid already >92% low-carbon (nuclear + hydro + expanding offshore wind and solar), enabling rapid electrification of the 50 largest industrial sites.',
       'National Biodiversity Strategy 2030: 30% protected land and marine areas (10% under strict protection) and "Zero Net Land Artificialization" (ZAN) by 2050.'
     ],
-    progressMetricFr: '304 MtCO₂e en France (-5,8 % en un an · 4,5 t/hab)',
-    progressMetricEn: '304 MtCO₂e in France (-5.8% in one year · 4.5 t/cap)',
+    progressMetricFr: '304 000 000 tonnes de CO₂/an en France (-5,8 %/an · 4,5 tCO₂/hab)',
+    progressMetricEn: '304,000,000 tonnes CO₂/yr in France (-5.8%/yr · 4.5 tCO₂/cap)',
     officialUrl: 'https://www.ecologie.gouv.fr/strategie-nationale-bas-carbone-snbc'
   },
   {
@@ -391,10 +391,12 @@ export const DeforestationBiodiversityActionsSection: React.FC<Props> = ({ lang 
                   </div>
                   <div className="text-left sm:text-right">
                     <div className="text-2xl font-mono-tabular font-bold text-slate-900">
-                      ~{activeFront.carbonStockGt} Gt
+                      ~{Math.round(activeFront.carbonStockGt * 3.67)} {isEn ? 'B tonnes CO₂' : 'Mrd tonnes de CO₂'}
                     </div>
                     <div className="text-xs text-slate-500">
-                      {isEn ? 'Biomass & Soil Carbon Stock' : 'Stock de carbone biomasse & sols'}
+                      {isEn
+                        ? 'CO₂ equivalent stored in biomass & soils'
+                        : 'Équivalent CO₂ stocké dans la biomasse & les sols'}
                     </div>
                   </div>
                 </div>

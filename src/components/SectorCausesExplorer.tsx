@@ -42,8 +42,8 @@ export const SectorCausesExplorer: React.FC<Props> = ({ lang }) => {
               <span className="mx-2" aria-hidden="true">·</span>
               <span>
                 {isEn
-                  ? 'Global Total: 59.1 GtCO₂eq / yr (IPCC AR6 & Climate Watch)'
-                  : 'Bilan Mondial : 59,1 GtCO₂eq / an (GIEC AR6 & Climate Watch)'}
+                  ? 'Global Total: 59,100,000,000 tonnes CO₂ / yr (IPCC AR6 & Climate Watch)'
+                  : 'Bilan Mondial : 59 100 000 000 tonnes de CO₂ / an (GIEC AR6 & Climate Watch)'}
               </span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display text-slate-900 mt-2">
@@ -53,8 +53,8 @@ export const SectorCausesExplorer: React.FC<Props> = ({ lang }) => {
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed mt-3 max-w-2xl">
               {isEn
-                ? 'Heat accumulation in the Earth’s climate system stems from five primary physical and economic sectors. Select any sector below to inspect its industrial sub-sectors, dominant greenhouse gases, and mitigation levers.'
-                : 'L’accumulation de chaleur dans le système climatique découle de cinq grands systèmes physiques et économiques. Sélectionnez un secteur ci-dessous pour décomposer ses sous-secteurs industriels, les gaz impliqués et les leviers de décarbonation.'}
+                ? 'Heat accumulation in the Earth’s climate system stems from five primary physical and economic sectors. Select any sector below to inspect its industrial sub-sectors in tonnes of CO₂, dominant greenhouse gases, and mitigation levers.'
+                : 'L’accumulation de chaleur dans le système climatique découle de cinq grands systèmes physiques et économiques. Sélectionnez un secteur ci-dessous pour décomposer ses sous-secteurs industriels en tonnes de CO₂, les gaz impliqués et les leviers de décarbonation.'}
             </p>
           </div>
 
@@ -69,7 +69,7 @@ export const SectorCausesExplorer: React.FC<Props> = ({ lang }) => {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {isEn ? 'All Gases (59.1 Gt)' : 'Tous les gaz (59,1 Gt)'}
+              {isEn ? 'All Gases (59.1B tCO₂)' : 'Tous les gaz (59,1 Mrd tCO₂)'}
             </button>
             <button
               type="button"
@@ -101,8 +101,8 @@ export const SectorCausesExplorer: React.FC<Props> = ({ lang }) => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs text-slate-500 mb-2">
             <span>
               {isEn
-                ? 'Proportional breakdown of global greenhouse gas emissions (100% = 59.1 GtCO₂eq/yr)'
-                : 'Répartition proportionnelle des émissions mondiales de gaz à effet de serre (100 % = 59,1 GtCO₂eq/an)'}
+                ? 'Proportional breakdown of global greenhouse gas emissions (100% = 59,100,000,000 tonnes CO₂/yr)'
+                : 'Répartition proportionnelle des émissions mondiales de gaz à effet de serre (100 % = 59 100 000 000 tonnes de CO₂/an)'}
             </span>
             <span className="font-mono-tabular">
               {isEn ? 'Tap or click a block to inspect sub-sectors' : 'Cliquez sur un bloc pour explorer ses sous-secteurs'}
@@ -127,7 +127,7 @@ export const SectorCausesExplorer: React.FC<Props> = ({ lang }) => {
                   className={`h-full relative group transition-opacity border-r border-white/30 last:border-r-0 flex flex-col justify-center px-1.5 sm:px-2.5 text-left overflow-hidden focus:outline-none cursor-pointer ${
                     isSelected ? 'ring-2 ring-inset ring-white' : ''
                   }`}
-                  title={`${sName}: ${sector.sharePercent}% (${sector.annualGtCO2e} GtCO₂e)`}
+                  title={`${sName}: ${sector.sharePercent}% (${(sector.annualGtCO2e * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO₂/an)`}
                 >
                   <span className="text-[11px] font-mono-tabular font-semibold text-white truncate">
                     {sector.sharePercent}%
@@ -196,7 +196,7 @@ export const SectorCausesExplorer: React.FC<Props> = ({ lang }) => {
                           isSelected ? 'text-slate-300' : 'text-slate-500'
                         }`}
                       >
-                        {sector.annualGtCO2e.toFixed(2)} {isEn ? 'GtCO₂e/yr' : 'GtCO₂e/an'}
+                        {sector.annualGtCO2e.toFixed(2)} {isEn ? 'B tCO₂/yr' : 'Mrd tCO₂/an'}
                       </span>
                     </div>
                   </div>
@@ -226,15 +226,15 @@ export const SectorCausesExplorer: React.FC<Props> = ({ lang }) => {
                 </div>
                 <div className="text-left sm:text-right">
                   <div className="text-2xl sm:text-3xl font-mono-tabular font-bold text-slate-900">
-                    {activeSector.annualGtCO2e.toFixed(2)}
-                    <span className="text-xs font-mono-tabular text-slate-500 ml-1.5 uppercase">
-                      {isEn ? 'GtCO₂e / yr' : 'GtCO₂e / an'}
+                    {(activeSector.annualGtCO2e * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')}
+                    <span className="text-xs font-mono-tabular text-slate-500 ml-1.5">
+                      {isEn ? 'tonnes CO₂ / yr' : 'tonnes de CO₂ / an'}
                     </span>
                   </div>
                   <div className="text-xs font-mono-tabular text-slate-500">
                     {isEn
-                      ? `${activeSector.sharePercent}% of global total`
-                      : `Soit ${activeSector.sharePercent}% du total mondial`}
+                      ? `${activeSector.sharePercent}% of global total (${activeSector.annualGtCO2e.toFixed(2)}B tCO₂/yr)`
+                      : `Soit ${activeSector.sharePercent} % du total mondial (${activeSector.annualGtCO2e.toFixed(2)} Mrd tCO₂/an)`}
                   </div>
                 </div>
               </div>
@@ -253,7 +253,7 @@ export const SectorCausesExplorer: React.FC<Props> = ({ lang }) => {
                       : 'Décomposition par sous-secteur (cliquez pour inspecter le mécanisme)'}
                   </span>
                   <span className="font-mono-tabular">
-                    {isEn ? 'Global Share (%) & Volume (Gt)' : 'Part mondiale (%) & Volume (Gt)'}
+                    {isEn ? 'Global Share (%) & Volume (tonnes CO₂)' : 'Part mondiale (%) & Volume (tonnes de CO₂)'}
                   </span>
                 </div>
 
@@ -286,7 +286,9 @@ export const SectorCausesExplorer: React.FC<Props> = ({ lang }) => {
                           <div className="font-mono-tabular text-xs shrink-0">
                             <span className="font-bold text-slate-900">{sub.share.toFixed(1)}%</span>
                             <span className="text-slate-400 mx-1.5">·</span>
-                            <span className="text-slate-600">{sub.gtCO2e.toFixed(2)} Gt</span>
+                            <span className="text-slate-600">
+                              {(sub.gtCO2e * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} {isEn ? 'tCO₂/yr' : 'tCO₂/an'}
+                            </span>
                           </div>
                         </div>
                         <div className="w-full h-1.5 bg-slate-100 mt-2.5 overflow-hidden">

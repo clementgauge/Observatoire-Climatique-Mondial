@@ -104,7 +104,7 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {isEn ? 'Annual Volume (MtCO₂)' : 'Volume Annuel (MtCO₂)'}
+                {isEn ? 'Annual Volume (tonnes CO₂)' : 'Volume Annuel (tonnes de CO₂)'}
               </button>
               <button
                 type="button"
@@ -115,7 +115,7 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {isEn ? 'Per Capita (tCO₂/cap)' : 'Par Habitant (tCO₂/hab)'}
+                {isEn ? 'Per Capita (tonnes CO₂/cap)' : 'Par Habitant (tonnes de CO₂/hab)'}
               </button>
               <button
                 type="button"
@@ -161,10 +161,10 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
                     {isEn ? 'Country / Jurisdiction' : 'Pays / Juridiction'}
                   </th>
                   <th className="py-3 px-3 sm:px-4 font-medium text-right">
-                    {isEn ? 'Annual (MtCO₂)' : 'Annuel (MtCO₂)'}
+                    {isEn ? 'Annual (tonnes CO₂)' : 'Annuel (tonnes de CO₂)'}
                   </th>
                   <th className="py-3 px-3 sm:px-4 font-medium text-right">
-                    {isEn ? 'tCO₂ / Capita' : 'tCO₂ / Habitant'}
+                    {isEn ? 'tonnes CO₂ / Cap' : 'tonnes de CO₂ / Hab'}
                   </th>
                   <th className="py-3 px-3 sm:px-4 font-medium text-right">
                     {isEn ? '1850 Cumul. (%)' : 'Cumul 1850 (%)'}
@@ -211,10 +211,10 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
                         </div>
                       </td>
                       <td className="py-3.5 px-3 sm:px-4 text-right font-mono-tabular text-slate-900">
-                        {country.annualMtCO2.toLocaleString(isEn ? 'en-US' : 'fr-FR')}
+                        {(country.annualMtCO2 * 1_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} <span className="text-[11px] text-slate-500">tCO₂</span>
                       </td>
                       <td className="py-3.5 px-3 sm:px-4 text-right font-mono-tabular text-slate-800">
-                        {country.perCapitaTonnes.toFixed(1)}
+                        {country.perCapitaTonnes.toFixed(1)} <span className="text-[11px] text-slate-500">tCO₂</span>
                       </td>
                       <td className="py-3.5 px-3 sm:px-4 text-right font-mono-tabular text-slate-700">
                         {country.cumulativeSharePercent.toFixed(1)}%
@@ -256,11 +256,11 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
                   <div className="text-2xl font-mono-tabular font-bold text-slate-900">
                     {selectedCountry.perCapitaTonnes.toFixed(1)}
                     <span className="text-xs font-mono-tabular text-slate-500 ml-1">
-                      {isEn ? 'tCO₂/cap' : 'tCO₂/hab'}
+                      {isEn ? 'tonnes CO₂/cap' : 'tonnes de CO₂/hab'}
                     </span>
                   </div>
                   <div className="text-xs text-slate-500">
-                    {isEn ? 'World average: 4.7 t/cap' : 'Moyenne mondiale : 4,7 t/hab'}
+                    {isEn ? 'World average: 4.7 tonnes CO₂/cap' : 'Moyenne mondiale : 4,7 tonnes de CO₂/hab'}
                   </div>
                 </div>
               </div>
@@ -269,11 +269,13 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
               <div className="grid grid-cols-3 gap-3 py-4 border-b border-slate-200">
                 <div>
                   <div className="text-xs text-slate-500">
-                    {isEn ? 'Annual Flux' : 'Flux Annuel'}
+                    {isEn ? 'Annual Flux (tCO₂)' : 'Flux Annuel (tCO₂)'}
                   </div>
-                  <div className="text-lg font-mono-tabular font-bold text-slate-900 mt-0.5">
-                    {(selectedCountry.annualMtCO2 / 1000).toFixed(2)}
-                    <span className="text-xs font-normal text-slate-500 ml-1">Gt</span>
+                  <div className="text-sm sm:text-base font-mono-tabular font-bold text-slate-900 mt-0.5">
+                    {(selectedCountry.annualMtCO2 * 1_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')}
+                    <span className="text-[11px] font-normal text-slate-500 block">
+                      {isEn ? 'tonnes CO₂ / yr' : 'tonnes de CO₂ / an'}
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -390,8 +392,8 @@ export const CountryEmissionsMatrix: React.FC<Props> = ({ lang }) => {
                 ) : (
                   <div className="bg-white border border-slate-200 p-3 text-xs text-slate-600 font-mono-tabular">
                     {isEn ? 'National emission trajectory:' : 'Évolution des émissions nationales :'}{' '}
-                    {selectedCountry.historical1990Mt} MtCO₂ (1990) →{' '}
-                    {selectedCountry.annualMtCO2} MtCO₂ ({isEn ? 'current' : 'actuel'}).
+                    {(selectedCountry.historical1990Mt * 1_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO₂ (1990) →{' '}
+                    {(selectedCountry.annualMtCO2 * 1_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO₂ ({isEn ? 'current' : 'actuel'}).
                   </div>
                 )}
               </div>

@@ -126,11 +126,11 @@ export const PlanetaryBoundariesRadarSection: React.FC<Props> = ({ lang }) => {
     {
       nameFr: '1. Changement Climatique (CO₂)',
       nameEn: '1. Climate Change (CO₂)',
-      safeLimit: '350 ppm',
-      currentValue: '426,4 ppm',
+      safeLimit: '2 737 Mrd tCO₂ (350 ppm)',
+      currentValue: '3 334 Mrd tCO₂ (426,4 ppm)',
       transgressionScore: 95,
-      detailFr: 'Limite de sécurité fixée à 350 ppm et +1,0 W/m². Actuellement à 426,4 ppm et +2,91 W/m² (Zone à haut risque).',
-      detailEn: 'Safe boundary set at 350 ppm and +1.0 W/m². Currently at 426.4 ppm and +2.91 W/m² (High-risk zone).'
+      detailFr: 'Limite de sécurité fixée à 2 737 milliards de tonnes de CO₂ (350 ppm). Actuellement à 3 334 milliards de tonnes de CO₂ (+59,1 milliards de tonnes de CO₂/an).',
+      detailEn: 'Safe boundary set at 2,737 billion tonnes of CO₂ (350 ppm). Currently at 3,334 billion tonnes of CO₂ (+59.1 billion tonnes CO₂/yr).'
     },
     {
       nameFr: '2. Intégrité de la Biosphère (WWF IPV)',

@@ -9,6 +9,27 @@ export interface HistoricalPoint {
   arcticIceMkm2: number;
 }
 
+export type AnnotationCategory = 'volcanic' | 'treaty' | 'threshold';
+
+export interface HistoricalAnnotation {
+  id: string;
+  year: number;
+  category: AnnotationCategory;
+  shortLabelFr: string;
+  shortLabelEn: string;
+  titleFr: string;
+  titleEn: string;
+  impactBadgeFr: string;
+  impactBadgeEn: string;
+  narrativeFr: string;
+  narrativeEn: string;
+  /** Which curve this event primarily anchors to in CO2/CH4 vs Temp modes */
+  anchorSeries: 'primary' | 'secondary';
+  /** Vertical offset in SVG pixels for the callout label so annotations never collide */
+  labelOffsetY: number;
+  textAnchor?: 'start' | 'middle' | 'end';
+}
+
 export interface SectorCause {
   id: string;
   name: string;
@@ -70,6 +91,7 @@ export interface ObservatoryStation {
 // High-precision empirical dataset (NOAA GML / NASA GISS / IPCC AR6 / Global Carbon Project)
 export const HISTORICAL_CLIMATE_DATA: HistoricalPoint[] = [
   { year: 1880, co2Ppm: 290.8, tempAnomaly: -0.16, ch4Ppb: 850, seaLevelMm: -185, arcticIceMkm2: 7.85 },
+  { year: 1883, co2Ppm: 291.9, tempAnomaly: -0.32, ch4Ppb: 856, seaLevelMm: -181, arcticIceMkm2: 7.88 },
   { year: 1890, co2Ppm: 294.2, tempAnomaly: -0.35, ch4Ppb: 868, seaLevelMm: -172, arcticIceMkm2: 7.80 },
   { year: 1900, co2Ppm: 295.7, tempAnomaly: -0.08, ch4Ppb: 885, seaLevelMm: -158, arcticIceMkm2: 7.75 },
   { year: 1910, co2Ppm: 299.8, tempAnomaly: -0.43, ch4Ppb: 915, seaLevelMm: -146, arcticIceMkm2: 7.72 },
@@ -77,14 +99,19 @@ export const HISTORICAL_CLIMATE_DATA: HistoricalPoint[] = [
   { year: 1930, co2Ppm: 307.2, tempAnomaly: -0.15, ch4Ppb: 1012, seaLevelMm: -119, arcticIceMkm2: 7.52 },
   { year: 1940, co2Ppm: 310.5, tempAnomaly: 0.12, ch4Ppb: 1068, seaLevelMm: -102, arcticIceMkm2: 7.40 },
   { year: 1950, co2Ppm: 311.3, tempAnomaly: -0.17, ch4Ppb: 1145, seaLevelMm: -84, arcticIceMkm2: 7.35 },
+  { year: 1958, co2Ppm: 315.3, tempAnomaly: 0.06, ch4Ppb: 1238, seaLevelMm: -66, arcticIceMkm2: 7.26 },
   { year: 1960, co2Ppm: 316.9, tempAnomaly: -0.03, ch4Ppb: 1265, seaLevelMm: -62, arcticIceMkm2: 7.22 },
+  { year: 1963, co2Ppm: 318.9, tempAnomaly: -0.14, ch4Ppb: 1308, seaLevelMm: -55, arcticIceMkm2: 7.19 },
   { year: 1965, co2Ppm: 320.0, tempAnomaly: -0.11, ch4Ppb: 1335, seaLevelMm: -51, arcticIceMkm2: 7.15 },
   { year: 1970, co2Ppm: 325.7, tempAnomaly: 0.03, ch4Ppb: 1412, seaLevelMm: -39, arcticIceMkm2: 7.02 },
   { year: 1975, co2Ppm: 331.1, tempAnomaly: -0.01, ch4Ppb: 1485, seaLevelMm: -27, arcticIceMkm2: 6.91 },
   { year: 1980, co2Ppm: 338.8, tempAnomaly: 0.26, ch4Ppb: 1576, seaLevelMm: -14, arcticIceMkm2: 7.54 },
+  { year: 1982, co2Ppm: 341.4, tempAnomaly: 0.07, ch4Ppb: 1612, seaLevelMm: -9, arcticIceMkm2: 7.18 },
   { year: 1985, co2Ppm: 346.1, tempAnomaly: 0.12, ch4Ppb: 1658, seaLevelMm: -2, arcticIceMkm2: 6.70 },
   { year: 1990, co2Ppm: 354.4, tempAnomaly: 0.45, ch4Ppb: 1714, seaLevelMm: 11, arcticIceMkm2: 6.14 },
+  { year: 1992, co2Ppm: 356.5, tempAnomaly: 0.14, ch4Ppb: 1735, seaLevelMm: 15, arcticIceMkm2: 6.45 },
   { year: 1995, co2Ppm: 360.9, tempAnomaly: 0.45, ch4Ppb: 1752, seaLevelMm: 22, arcticIceMkm2: 6.08 },
+  { year: 1997, co2Ppm: 363.8, tempAnomaly: 0.47, ch4Ppb: 1764, seaLevelMm: 27, arcticIceMkm2: 6.18 },
   { year: 2000, co2Ppm: 369.7, tempAnomaly: 0.39, ch4Ppb: 1773, seaLevelMm: 34, arcticIceMkm2: 6.25 },
   { year: 2005, co2Ppm: 379.9, tempAnomaly: 0.68, ch4Ppb: 1775, seaLevelMm: 51, arcticIceMkm2: 5.50 },
   { year: 2010, co2Ppm: 390.1, tempAnomaly: 0.72, ch4Ppb: 1799, seaLevelMm: 67, arcticIceMkm2: 4.87 },
@@ -96,6 +123,189 @@ export const HISTORICAL_CLIMATE_DATA: HistoricalPoint[] = [
   { year: 2023, co2Ppm: 421.1, tempAnomaly: 1.18, ch4Ppb: 1923, seaLevelMm: 108, arcticIceMkm2: 4.23 },
   { year: 2024, co2Ppm: 424.6, tempAnomaly: 1.48, ch4Ppb: 1931, seaLevelMm: 112, arcticIceMkm2: 4.28 },
   { year: 2025, co2Ppm: 426.8, tempAnomaly: 1.52, ch4Ppb: 1939, seaLevelMm: 116, arcticIceMkm2: 4.19 }
+];
+
+export const HISTORICAL_CLIMATE_ANNOTATIONS: HistoricalAnnotation[] = [
+  {
+    id: 'krakatoa-1883',
+    year: 1883,
+    category: 'volcanic',
+    shortLabelFr: '1883 · Krakatoa (-0,3 °C)',
+    shortLabelEn: '1883 · Krakatoa (-0.3 °C)',
+    titleFr: 'Éruption cataclysmique du Krakatoa (Indonésie)',
+    titleEn: 'Cataclysmic Krakatoa Eruption (Indonesia)',
+    impactBadgeFr: 'Forçage volcanique : -0,32 °C (voile d’aérosols sulfatés)',
+    impactBadgeEn: 'Volcanic forcing: -0.32 °C (stratospheric sulfate veil)',
+    narrativeFr:
+      'L’injection massive de dioxyde de soufre (SO₂) dans la stratosphère a formé un bouclier d’aérosols réfléchissant le rayonnement solaire incident pendant 3 ans, provoquant un refroidissement global temporaire sans interrompre l’accumulation industrielle de CO₂.',
+    narrativeEn:
+      'Massive sulfur dioxide (SO₂) injection into the stratosphere formed a reflective sulfate aerosol veil for 3 years, triggering temporary global cooling while industrial CO₂ accumulation continued unabated.',
+    anchorSeries: 'secondary',
+    labelOffsetY: -34,
+    textAnchor: 'start'
+  },
+  {
+    id: 'novarupta-1910',
+    year: 1910,
+    category: 'volcanic',
+    shortLabelFr: '1902–1912 · Santa María & Novarupta',
+    shortLabelEn: '1902–1912 · Santa María & Novarupta',
+    titleFr: 'Séquence éruptive Santa María (1902) & Novarupta (1912)',
+    titleEn: 'Santa María (1902) & Novarupta (1912) Eruptive Sequence',
+    impactBadgeFr: 'Minimum thermique du XXe siècle : -0,43 °C',
+    impactBadgeEn: '20th-century thermal minimum: -0.43 °C',
+    narrativeFr:
+      'La succession des plus puissantes éruptions du début du XXe siècle (Santa María, Ksudach, Novarupta en Alaska) combinée à un minimum solaire a maintenu l’anomalie thermique globale autour de -0,43 °C malgré 2 344 Mrd tonnes de CO₂ dans l’atmosphère.',
+    narrativeEn:
+      'A cluster of major early-20th-century volcanic eruptions (Santa María, Ksudach, Novarupta in Alaska) combined with low solar activity depressed global temperatures to -0.43 °C despite 2,344B tonnes of atmospheric CO₂.',
+    anchorSeries: 'secondary',
+    labelOffsetY: -28,
+    textAnchor: 'middle'
+  },
+  {
+    id: 'keeling-1958',
+    year: 1958,
+    category: 'threshold',
+    shortLabelFr: '1958 · Courbe de Keeling (Mauna Loa)',
+    shortLabelEn: '1958 · Keeling Curve (Mauna Loa)',
+    titleFr: 'Début des mesures continues à Mauna Loa (Charles David Keeling)',
+    titleEn: 'Start of Continuous Mauna Loa CO₂ Record (C.D. Keeling)',
+    impactBadgeFr: '2 466 Mrd tCO₂ (315,3 ppm) · Preuve directe de l’accumulation',
+    impactBadgeEn: '2,466B tCO₂ (315.3 ppm) · Direct proof of accumulation',
+    narrativeFr:
+      'L’installation de l’analyseur infrarouge de Charles David Keeling à 3 397 m d’altitude à Hawaï établit la première mesure instrumentale directe prouvant que la combustion fossile augmente inexorablement la masse de CO₂ atmosphérique d’année en année.',
+    narrativeEn:
+      'Charles David Keeling’s infrared gas analyzer at 3,397 m in Hawaii established the first direct instrumental record proving that fossil fuel combustion inexorably increases atmospheric CO₂ mass year after year.',
+    anchorSeries: 'primary',
+    labelOffsetY: -42,
+    textAnchor: 'middle'
+  },
+  {
+    id: 'agung-1963',
+    year: 1963,
+    category: 'volcanic',
+    shortLabelFr: '1963 · Mont Agung (-0,14 °C)',
+    shortLabelEn: '1963 · Mt. Agung (-0.14 °C)',
+    titleFr: 'Éruption stratosphérique du Mont Agung (Bali)',
+    titleEn: 'Mount Agung Stratospheric Eruption (Bali)',
+    impactBadgeFr: 'Refroidissement aérosols : -0,14 °C (-0,20 °C sur 24 mois)',
+    impactBadgeEn: 'Aerosol cooling: -0.14 °C (-0.20 °C over 24 months)',
+    narrativeFr:
+      'Riche en soufre, le panache du Mont Agung a atteint 25 km d’altitude et refroidi la basse troposphère mondiale de près de 0,2 °C pendant deux ans, masquant temporairement le début de l’accélération industrielle d’après-guerre.',
+    narrativeEn:
+      'Sulfur-rich plumes from Mount Agung reached 25 km into the stratosphere and cooled the global lower troposphere by ~0.2 °C for two years, briefly masking post-war industrial warming.',
+    anchorSeries: 'secondary',
+    labelOffsetY: 32,
+    textAnchor: 'middle'
+  },
+  {
+    id: 'el-chichon-1982',
+    year: 1982,
+    category: 'volcanic',
+    shortLabelFr: '1982 · El Chichón',
+    shortLabelEn: '1982 · El Chichón',
+    titleFr: 'Éruption volcanique d’El Chichón (Mexique)',
+    titleEn: 'El Chichón Volcanic Eruption (Mexico)',
+    impactBadgeFr: 'Inflexion thermique : +0,07 °C (-0,19 °C vs 1980)',
+    impactBadgeEn: 'Thermal dip: +0.07 °C (-0.19 °C vs 1980)',
+    narrativeFr:
+      'Avec 7 millions de tonnes de SO₂ injectées dans la stratosphère, El Chichón provoque une chute nette de l’anomalie thermique de +0,26 °C (1980) à +0,07 °C (1982), avant que le forçage des gaz à effet de serre ne reprenne le dessus.',
+    narrativeEn:
+      'Injecting 7 million tonnes of SO₂ into the stratosphere, El Chichón drove a sharp thermal dip from +0.26 °C (1980) down to +0.07 °C (1982) before greenhouse gas forcing resumed its climb.',
+    anchorSeries: 'secondary',
+    labelOffsetY: 30,
+    textAnchor: 'middle'
+  },
+  {
+    id: 'pinatubo-1992',
+    year: 1992,
+    category: 'volcanic',
+    shortLabelFr: '1991–92 · Mont Pinatubo (-0,4 °C)',
+    shortLabelEn: '1991–92 · Mt. Pinatubo (-0.4 °C)',
+    titleFr: 'Éruption du Mont Pinatubo (Philippines, juin 1991)',
+    titleEn: 'Mount Pinatubo Eruption (Philippines, June 1991)',
+    impactBadgeFr: '20 Mt de SO₂ · Chute thermique globale de -0,40 °C en 1992',
+    impactBadgeEn: '20 Mt SO₂ · Global thermal drop of -0.40 °C in 1992',
+    narrativeFr:
+      'Plus grande perturbation volcanique stratosphérique de la seconde moitié du XXe siècle : 20 millions de tonnes de SO₂ ont réduit l’irradiance solaire au sol de ~2,5 W/m², faisant chuter l’anomalie globale de +0,45 °C à +0,14 °C en 1992.',
+    narrativeEn:
+      'Largest stratospheric volcanic perturbation of the late 20th century: 20 million tonnes of SO₂ cut surface solar irradiance by ~2.5 W/m², dropping global anomaly from +0.45 °C to +0.14 °C in 1992.',
+    anchorSeries: 'secondary',
+    labelOffsetY: 36,
+    textAnchor: 'middle'
+  },
+  {
+    id: 'kyoto-1997',
+    year: 1997,
+    category: 'treaty',
+    shortLabelFr: '1997 · Protocole de Kyoto (COP3)',
+    shortLabelEn: '1997 · Kyoto Protocol (COP3)',
+    titleFr: 'Adoption du Protocole de Kyoto (COP3)',
+    titleEn: 'Adoption of the Kyoto Protocol (COP3)',
+    impactBadgeFr: '2 845 Mrd tCO₂ (363,8 ppm) · Premier traité contraignant',
+    impactBadgeEn: '2,845B tCO₂ (363.8 ppm) · First binding climate treaty',
+    narrativeFr:
+      'Premier accord international fixant des objectifs juridiquement contraignants aux pays industrialisés (Annexe I). Toutefois, l’absence de ratification par les États-Unis et l’essor industriel rapide de l’Asie accélèrent la pente du CO₂ après 2000.',
+    narrativeEn:
+      'First international treaty setting legally binding reduction targets for industrialized nations. However, non-ratification by the US and rapid industrial growth in Asia steepened the CO₂ curve after 2000.',
+    anchorSeries: 'primary',
+    labelOffsetY: -36,
+    textAnchor: 'middle'
+  },
+  {
+    id: 'arctic-2012',
+    year: 2012,
+    category: 'threshold',
+    shortLabelFr: '2012 · Minimum Banquise (3,39 Mkm²)',
+    shortLabelEn: '2012 · Record Sea Ice Low (3.39 Mkm²)',
+    titleFr: 'Minimum historique absolu de la banquise arctique',
+    titleEn: 'All-Time Record Minimum Arctic Sea Ice Extent',
+    impactBadgeFr: '3,39 M km² (-57 % vs 1880) · Rétroaction d’albédo',
+    impactBadgeEn: '3.39 M km² (-57% vs 1880) · Ice-albedo feedback loop',
+    narrativeFr:
+      'En septembre 2012, la banquise arctique perd plus de la moitié de sa surface estivale historique (3,39 M km²). Le remplacement de la glace réfléchissante par l’océan sombre amplifie le réchauffement polaire (amplification arctique ×3 à ×4).',
+    narrativeEn:
+      'In September 2012, Arctic summer sea ice shrank to less than half its historical extent (3.39 M km²). Replacing reflective ice with dark ocean water accelerates polar warming (Arctic amplification ×3–4).',
+    anchorSeries: 'secondary',
+    labelOffsetY: 32,
+    textAnchor: 'end'
+  },
+  {
+    id: 'paris-2015',
+    year: 2015,
+    category: 'treaty',
+    shortLabelFr: '2015 · Accord de Paris (COP21)',
+    shortLabelEn: '2015 · Paris Agreement (COP21)',
+    titleFr: 'Accord de Paris sur le Climat (COP21 — 196 Parties)',
+    titleEn: 'Paris Climate Agreement (COP21 — 196 Parties)',
+    impactBadgeFr: '3 136 Mrd tCO₂ (401 ppm) · Cible +1,5 °C / < +2,0 °C',
+    impactBadgeEn: '3,136B tCO₂ (401 ppm) · Target +1.5 °C / < +2.0 °C',
+    narrativeFr:
+      '196 États adoptent un cadre universel visant à contenir le réchauffement bien en-dessous de +2,0 °C et poursuivre l’objectif de +1,5 °C. Bien que l’accord ait accéléré la transition électrique mondiale, +202 Mrd tonnes de CO₂ supplémentaires se sont accumulées dans l’atmosphère depuis 2015.',
+    narrativeEn:
+      '196 Parties adopted a universal pact to hold warming well below +2.0 °C and pursue +1.5 °C. While catalyzing clean energy deployment worldwide, an additional +202B tonnes of CO₂ have accumulated in the atmosphere since 2015.',
+    anchorSeries: 'primary',
+    labelOffsetY: -44,
+    textAnchor: 'end'
+  },
+  {
+    id: 'breach-2024',
+    year: 2024,
+    category: 'threshold',
+    shortLabelFr: '2024–25 · Franchissement +1,5 °C',
+    shortLabelEn: '2024–25 · +1.5 °C Threshold Reached',
+    titleFr: 'Franchissement annuel du seuil de +1,5 °C (2024–2025)',
+    titleEn: 'First Annual Breach of the +1.5 °C Threshold (2024–2025)',
+    impactBadgeFr: '+1,48 à +1,52 °C · 3 338 Mrd tCO₂ (426,8 ppm)',
+    impactBadgeEn: '+1.48 to +1.52 °C · 3,338B tCO₂ (426.8 ppm)',
+    narrativeFr:
+      'Sous l’effet combiné du forçage radiatif record des gaz à effet de serre (3 338 Mrd tonnes de CO₂) et d’un épisode El Niño, la température moyenne mondiale atteint pour la première fois la ligne critique de +1,5 °C sur une année calendaire complète.',
+    narrativeEn:
+      'Driven by record greenhouse gas radiative forcing (3,338B tonnes of CO₂) and an El Niño cycle, global mean surface temperature reached the critical +1.5 °C Paris threshold across a full calendar year for the first time.',
+    anchorSeries: 'secondary',
+    labelOffsetY: -22,
+    textAnchor: 'end'
+  }
 ];
 
 // Global Greenhouse Gas Emissions by Sector & Root Causes (59.1 GtCO2e/yr total - IPCC AR6 / Climate Watch)

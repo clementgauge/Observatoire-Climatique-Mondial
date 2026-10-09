@@ -100,9 +100,9 @@ const OFFICIAL_SCIENTIFIC_SOURCES: ScientificSourceItem[] = [
     updateFrequencyFr: 'Synthèse scientifique internationale de référence',
     updateFrequencyEn: 'International benchmark scientific assessment',
     methodologyFr:
-      'Nomenclature officielle des émissions anthropiques mondiales (59,1 GtCO₂eq/an) pondérées par le Potentiel de Réchauffement Global à 100 ans (PRG-100) et réponse climatique transitoire aux émissions cumulées (TCRE ~0,45 °C / 1000 GtCO₂).',
+      'Nomenclature officielle des émissions anthropiques mondiales (59 100 000 000 tonnes de CO₂/an) pondérées par le Potentiel de Réchauffement Global à 100 ans (PRG-100) et réponse climatique transitoire aux émissions cumulées (TCRE ~0,45 °C / 1 000 Mrd tonnes de CO₂).',
     methodologyEn:
-      'Official sectoral accounting of global anthropogenic GHG emissions (59.1 GtCO₂eq/yr) weighted by 100-year Global Warming Potential (GWP-100) and Transient Climate Response to Cumulative Emissions (TCRE ~0.45 °C / 1000 GtCO₂).',
+      'Official sectoral accounting of global anthropogenic GHG emissions (59,100,000,000 tonnes CO₂/yr) weighted by 100-year Global Warming Potential (GWP-100) and Transient Climate Response to Cumulative Emissions (TCRE ~0.45 °C / 1,000B tonnes CO₂).',
     officialUrl: 'https://www.ipcc.ch/report/ar6/wg3/',
     referencePortalLabel: 'ipcc.ch/report/ar6'
   },

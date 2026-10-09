@@ -101,8 +101,8 @@ export function generateClimatePdfReport({
   doc.text(
     sanitizePdfText(
       isEn
-        ? `Live Stream: ${atmospheric.sourceLabelEn} | Session GHG Emitted: +${tonnesEmittedSession.toLocaleString('en-US')} tCO2eq`
-        : `Flux Direct : ${atmospheric.sourceLabelFr} | GES émis durant la session : +${tonnesEmittedSession.toLocaleString('fr-FR')} tCO2eq`
+        ? `Live Stream: ${atmospheric.sourceLabelEn} | Session CO2 Emitted: +${tonnesEmittedSession.toLocaleString('en-US')} tonnes CO2`
+        : `Flux Direct : ${atmospheric.sourceLabelFr} | CO2 émis durant la session : +${tonnesEmittedSession.toLocaleString('fr-FR')} tonnes de CO2`
     ),
     14,
     27
@@ -116,8 +116,8 @@ export function generateClimatePdfReport({
   doc.text(
     sanitizePdfText(
       isEn
-        ? '1. Live Global Atmospheric Telemetry (NOAA GML & NASA GISS)'
-        : '1. Télémesure Atmosphérique Globale en Temps Réel (NOAA GML & NASA GISS)'
+        ? '1. Live Global Atmospheric Telemetry in Tonnes of CO2 (NOAA GML & NASA GISS)'
+        : '1. Télémesure Atmosphérique Globale en Tonnes de CO2 (NOAA GML & NASA GISS)'
     ),
     14,
     currentY
@@ -131,32 +131,32 @@ export function generateClimatePdfReport({
     tableWidth: 182,
     head: [
       isEn
-        ? ['Physical Indicator', 'Live Measured Value', 'Annual Delta / Reference', 'Official Source & Endpoint']
-        : ['Indicateur Physique', 'Valeur Mesurée en Direct', 'Variation Annuelle / Réf.', 'Source Officielle & Endpoint']
+        ? ['Physical Indicator', 'Measured Value (tonnes CO2)', 'Annual Delta / Reference', 'Official Source & Endpoint']
+        : ['Indicateur Physique', 'Valeur Mesurée (tonnes de CO2)', 'Variation Annuelle / Réf.', 'Source Officielle & Endpoint']
     ],
     body: [
       [
         isEn ? 'Tropospheric CO2 (Mauna Loa)' : 'CO2 Troposphérique (Mauna Loa)',
-        `${atmospheric.co2Ppm.toFixed(2)} ppm (${atmospheric.co2DateLabel})`,
-        `+${co2Delta} ppm / 12m (+52% vs 1850)`,
+        `41.6B tonnes CO2/yr (${atmospheric.co2Ppm.toFixed(2)} ppm)`,
+        `+${(Number(co2Delta) * 7.82).toFixed(1)}B tCO2/yr (+${co2Delta} ppm)`,
         'NOAA GML (gml.noaa.gov/ccgg/trends/)'
       ],
       [
         isEn ? 'Global Mean Thermal Anomaly' : 'Anomalie Thermique Globale',
         `+${atmospheric.tempAnomalyC.toFixed(2)} °C (${atmospheric.tempDateLabel})`,
-        isEn ? '+0.26 °C / decade vs 1850-1900' : '+0,26 °C / décennie vs 1850-1900',
+        isEn ? '1.5°C Budget: 200B tonnes CO2' : 'Budget 1,5°C : 200 Mrd tonnes CO2',
         'NASA GISS GISTEMP v4 & Copernicus ERA5'
       ],
       [
-        isEn ? 'Atmospheric Methane (CH4)' : 'Méthane Atmosphérique (CH4)',
-        `${atmospheric.ch4Ppb.toFixed(1)} ppb (${atmospheric.ch4DateLabel})`,
-        `+${ch4Delta} ppb / 12m (GWP-20: 84x)`,
+        isEn ? 'Atmospheric Methane (in tCO2)' : 'Méthane Atmosphérique (en tCO2)',
+        `11.2B tonnes CO2/yr (${atmospheric.ch4Ppb.toFixed(1)} ppb)`,
+        `+${ch4Delta} ppb / 12m (GWP-20: 84x CO2)`,
         'NOAA Global CH4 Network (gml.noaa.gov)'
       ],
       [
-        isEn ? 'Global Anthropogenic GHG Flux' : 'Flux Anthropique Mondial GES',
-        '59.10 GtCO2eq / yr (1,874 t/s)',
-        isEn ? 'Remaining 1.5°C Budget: ~200 Gt' : 'Budget 1,5°C restant : ~200 Gt',
+        isEn ? 'Global Anthropogenic CO2 Flux' : 'Flux Anthropique Mondial CO2',
+        '59,100,000,000 tonnes CO2/yr (1,874 tCO2/s)',
+        isEn ? 'World Average: 4.7 tonnes CO2/cap' : 'Moyenne mondiale : 4,7 tonnes CO2/hab',
         'IPCC AR6 WG3 & Global Carbon Project'
       ]
     ],
@@ -175,15 +175,15 @@ export function generateClimatePdfReport({
 
   currentY = (doc as any).lastAutoTable.finalY + 9;
 
-  // Section 2: Global Warming Root Causes by Sector (59.1 GtCO2e/yr)
+  // Section 2: Global Warming Root Causes by Sector (59,100,000,000 tonnes CO2/yr)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(15, 23, 42);
   doc.text(
     sanitizePdfText(
       isEn
-        ? '2. Global Warming Root Causes by Sector (59.1 GtCO2eq/yr - IPCC AR6)'
-        : '2. Répartition Mondiale des Causes du Réchauffement par Secteur (59,1 GtCO2eq/an)'
+        ? '2. Global Warming Root Causes by Sector (59,100,000,000 tonnes CO2/yr - IPCC AR6)'
+        : '2. Répartition Mondiale des Causes par Secteur (59 100 000 000 tonnes de CO2/an)'
     ),
     14,
     currentY
@@ -192,12 +192,16 @@ export function generateClimatePdfReport({
   // Format each sub-sector on its own clean bullet line and sanitize Unicode subscripts
   const sectorRows = GLOBAL_CAUSES_BY_SECTOR.map((s) => {
     const subList = s.subSectors
-      .map((sub) => sanitizePdfText(`• ${isEn ? sub.nameEn : sub.name} (${sub.share.toFixed(1)}% | ${sub.gtCO2e.toFixed(2)} Gt)`))
+      .map((sub) =>
+        sanitizePdfText(
+          `• ${isEn ? sub.nameEn : sub.name} (${sub.share.toFixed(1)}% | ${(sub.gtCO2e * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO2/yr)`
+        )
+      )
       .join('\n');
     return [
       sanitizePdfText(isEn ? s.nameEn : s.name),
       `${s.sharePercent.toFixed(1)}%`,
-      `${s.annualGtCO2e.toFixed(2)} Gt`,
+      sanitizePdfText(`${(s.annualGtCO2e * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO2`),
       sanitizePdfText(s.primaryGas),
       subList
     ];
@@ -208,8 +212,8 @@ export function generateClimatePdfReport({
     tableWidth: 182,
     head: [
       isEn
-        ? ['Sector', 'Share', 'Volume', 'Gas', 'Key Industrial Sub-Sectors']
-        : ['Secteur', 'Part', 'Volume', 'Gaz', 'Sous-Secteurs Industriels Clés']
+        ? ['Sector', 'Share', 'Volume (tCO2/yr)', 'Gas', 'Key Industrial Sub-Sectors']
+        : ['Secteur', 'Part', 'Volume (tCO2/an)', 'Gaz', 'Sous-Secteurs Industriels Clés']
     ],
     body: sectorRows,
     theme: 'grid',
@@ -217,11 +221,11 @@ export function generateClimatePdfReport({
     headStyles: { fillColor: [217, 119, 6], textColor: 255, fontSize: 8.5 },
     bodyStyles: { textColor: [30, 41, 59] },
     columnStyles: {
-      0: { cellWidth: 40, fontStyle: 'bold' },
-      1: { cellWidth: 16, halign: 'right' },
-      2: { cellWidth: 20, halign: 'right' },
+      0: { cellWidth: 38, fontStyle: 'bold' },
+      1: { cellWidth: 14, halign: 'right' },
+      2: { cellWidth: 26, halign: 'right' },
       3: { cellWidth: 14, halign: 'center' },
-      4: { cellWidth: 92 }
+      4: { cellWidth: 90 }
     },
     margin: { left: 14, right: 14 }
   });
@@ -235,8 +239,8 @@ export function generateClimatePdfReport({
   doc.text(
     sanitizePdfText(
       isEn
-        ? '3. Top 12 Global Emitting Countries & Historical Responsibility (EDGAR / World Bank)'
-        : '3. Atlas des 12 Grands Pays Émetteurs & Responsabilité Historique (EDGAR / Banque Mondiale)'
+        ? '3. Top 12 Global Emitting Countries in Tonnes of CO2 (EDGAR / World Bank)'
+        : '3. Atlas des 12 Grands Pays Émetteurs en Tonnes de CO2 (EDGAR / Banque Mondiale)'
     ),
     14,
     currentY
@@ -244,8 +248,8 @@ export function generateClimatePdfReport({
 
   const countryRows = COUNTRY_EMISSION_PROFILES.map((c) => [
     sanitizePdfText(`${isEn ? c.nameEn : c.name} (${c.iso})`),
-    sanitizePdfText(`${c.annualMtCO2.toLocaleString(isEn ? 'en-US' : 'fr-FR')} Mt`),
-    `${c.perCapitaTonnes.toFixed(1)} t`,
+    sanitizePdfText(`${(c.annualMtCO2 * 1_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO2`),
+    `${c.perCapitaTonnes.toFixed(1)} tCO2`,
     `${c.cumulativeSharePercent.toFixed(1)}%`,
     `${c.renewableSharePercent.toFixed(1)}%`,
     sanitizePdfText(isEn ? c.mainCauseEn : c.mainCause)
@@ -256,8 +260,8 @@ export function generateClimatePdfReport({
     tableWidth: 182,
     head: [
       isEn
-        ? ['Country (ISO)', 'Annual CO2', 'Per Cap.', '1850 Cumul.', 'Renewables', 'Primary Structural Causes']
-        : ['Pays (ISO)', 'CO2 Annuel', 'Par Hab.', 'Cumul 1850', 'Renouvelable', 'Causes Structurelles Principales']
+        ? ['Country (ISO)', 'Annual (tCO2)', 'tCO2/Cap', '1850 Cumul.', 'Renewables', 'Primary Structural Causes']
+        : ['Pays (ISO)', 'Annuel (tCO2)', 'tCO2/Hab', 'Cumul 1850', 'Renouvelable', 'Causes Structurelles Principales']
     ],
     body: countryRows,
     theme: 'striped',
@@ -265,11 +269,11 @@ export function generateClimatePdfReport({
     headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 8 },
     bodyStyles: { textColor: [30, 41, 59] },
     columnStyles: {
-      0: { cellWidth: 28, fontStyle: 'bold' },
-      1: { cellWidth: 21, halign: 'right' },
+      0: { cellWidth: 26, fontStyle: 'bold' },
+      1: { cellWidth: 25, halign: 'right' },
       2: { cellWidth: 16, halign: 'right' },
-      3: { cellWidth: 19, halign: 'right' },
-      4: { cellWidth: 20, halign: 'right' },
+      3: { cellWidth: 18, halign: 'right' },
+      4: { cellWidth: 19, halign: 'right' },
       5: { cellWidth: 78 }
     },
     margin: { left: 14, right: 14 }
@@ -510,7 +514,7 @@ export function generateClimatePdfReport({
         [
           isEn ? 'GHG Emissions & Footprint' : 'Émissions de GES & Empreinte',
           sanitizePdfText(
-            `${selectedCountry.annualMtCO2e} MtCO2e/yr\n${selectedCountry.perCapitaTonnes.toFixed(2)} tCO2/cap\n(${selectedCountry.evolutionSince1990Percent >= 0 ? '+' : ''}${selectedCountry.evolutionSince1990Percent.toFixed(1)}% vs 1990)`
+            `${(selectedCountry.annualMtCO2e * 1_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO2/yr\n${selectedCountry.perCapitaTonnes.toFixed(2)} tonnes CO2/cap\n(${selectedCountry.evolutionSince1990Percent >= 0 ? '+' : ''}${selectedCountry.evolutionSince1990Percent.toFixed(1)}% vs 1990)`
           ),
           sectorsSummary
         ],

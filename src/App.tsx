@@ -12,6 +12,7 @@ import {
 } from './services/climateApiService';
 import { generateClimatePdfReport } from './services/pdfReportGenerator';
 import { HistoricalCorrelationChart } from './components/HistoricalCorrelationChart';
+import { PlanetEarth3DSection } from './components/PlanetEarth3DSection';
 import { SectorCausesExplorer } from './components/SectorCausesExplorer';
 import { CountryEmissionsMatrix } from './components/CountryEmissionsMatrix';
 import { LiveStationTelemetryConsole } from './components/LiveStationTelemetryConsole';
@@ -259,11 +260,11 @@ export default function App() {
 
     const description = activeCountryDossier
       ? isEn
-        ? `${activeCountryDossier.nameEn} climate dossier: ${activeCountryDossier.annualMtCO2e} MtCO2e/yr (${activeCountryDossier.perCapitaTonnes} t/cap), ${activeCountryDossier.forestCoverPercent}% forest cover, WWF actions & laws.`
-        : `Dossier climat ${activeCountryDossier.nameFr} : ${activeCountryDossier.annualMtCO2e} MtCO2e/an (${activeCountryDossier.perCapitaTonnes} t/hab), ${activeCountryDossier.forestCoverPercent} % de forêts, actions WWF et lois.`
+        ? `${activeCountryDossier.nameEn} climate dossier: ${(activeCountryDossier.annualMtCO2e * 1_000_000).toLocaleString('en-US')} tonnes of CO2/yr (${activeCountryDossier.perCapitaTonnes} tonnes CO2/cap), ${activeCountryDossier.forestCoverPercent}% forest cover, WWF actions & laws.`
+        : `Dossier climat ${activeCountryDossier.nameFr} : ${(activeCountryDossier.annualMtCO2e * 1_000_000).toLocaleString('fr-FR')} tonnes de CO2/an (${activeCountryDossier.perCapitaTonnes} tonnes de CO2/hab), ${activeCountryDossier.forestCoverPercent} % de forêts, actions WWF et lois.`
       : isEn
-      ? 'Global Climate Observatory: real-time climate data (NOAA, NASA, IPCC), global warming causes, deforestation, WWF wildlife protection & country laws.'
-      : 'Observatoire Climatique Mondial : données en direct (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays.';
+      ? 'Global Climate Observatory: real-time climate data in tonnes of CO2 (NOAA, NASA, IPCC), global warming causes, deforestation, WWF wildlife protection & country laws.'
+      : 'Observatoire Climatique Mondial : données en direct en tonnes de CO2 (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays.';
 
     document.title = title;
 
@@ -427,6 +428,13 @@ export default function App() {
               {isEn ? 'Telemetry' : 'Télémesure'}
             </a>
             <a
+              href="#planete-terre-3d"
+              onClick={() => handleClearCountrySearch()}
+              className="text-emerald-700 hover:text-emerald-900 font-semibold hover:underline underline-offset-4 transition-colors whitespace-nowrap"
+            >
+              {isEn ? '3D Planet Earth' : 'Planète Terre 3D'}
+            </a>
+            <a
               href="#causes-mondiales"
               onClick={() => handleClearCountrySearch()}
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
@@ -535,6 +543,16 @@ export default function App() {
                 className="px-3 py-2 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
                 {isEn ? '01. Telemetry' : '01. Télémesure'}
+              </a>
+              <a
+                href="#planete-terre-3d"
+                onClick={() => {
+                  handleClearCountrySearch();
+                  setMobileMenuOpen(false);
+                }}
+                className="px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-900 font-semibold rounded-md hover:bg-emerald-100"
+              >
+                {isEn ? '3D Planet Earth' : 'Planète Terre 3D'}
               </a>
               <a
                 href="#causes-mondiales"
@@ -767,12 +785,12 @@ export default function App() {
               </div>
               <div className="font-mono-tabular text-slate-700">
                 {isEn
-                  ? 'GHG emitted since opening this page (IPCC 59.1 Gt/yr): '
-                  : 'GES émis depuis l’ouverture de la page (GIEC 59,1 Gt/an) : '}
+                  ? 'CO₂ emitted since opening this page (59.1B tCO₂/yr): '
+                  : 'CO₂ émis depuis l’ouverture de la page (59,1 Mrd tCO₂/an) : '}
                 <strong className="text-rose-600">
-                  +{tonnesEmittedSession.toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO₂eq
+                  +{tonnesEmittedSession.toLocaleString(isEn ? 'en-US' : 'fr-FR')} {isEn ? 'tonnes CO₂' : 'tonnes de CO₂'}
                 </strong>{' '}
-                (1,874 t/s)
+                (1 874 tCO₂/s)
               </div>
             </div>
 
@@ -788,8 +806,8 @@ export default function App() {
               <div className="lg:col-span-4">
                 <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
                   {isEn
-                    ? `Beyond industrial CO₂ (${atmospheric.co2Ppm.toFixed(2)} ppm at Mauna Loa), global warming is driven by methane, nitrous oxide, and the loss of 10 million hectares of forest every year. Explore real-time public telemetry, WWF wildlife conservation programs, and concrete measures enacted by France, Europe, and the world.`
-                    : `Au-delà du CO₂ industriel (${atmospheric.co2Ppm.toFixed(2)} ppm à Mauna Loa), le dérèglement climatique implique le méthane, la perte de 10 millions d’hectares de forêts par an et le déclin de 73 % de la faune sauvage. Explorez en temps réel les capteurs publics, les actions du WWF pour les animaux et les lois mises en place en France, en Europe et dans le monde.`}
+                    ? `Beyond global emissions of 59,100,000,000 tonnes of CO₂/yr (${atmospheric.co2Ppm.toFixed(2)} ppm at Mauna Loa), global warming is driven by methane, nitrous oxide, and the loss of 10 million hectares of forest every year. Explore real-time public telemetry in tonnes of CO₂, WWF wildlife conservation programs, and concrete measures enacted by France, Europe, and the world.`
+                    : `Au-delà des 59 100 000 000 tonnes de CO₂ émises par an (${atmospheric.co2Ppm.toFixed(2)} ppm à Mauna Loa), le dérèglement climatique implique le méthane, la perte de 10 millions d’hectares de forêts par an et le déclin de 73 % de la faune sauvage. Explorez en temps réel les données en tonnes de CO₂, les actions du WWF pour les animaux et les lois mises en place en France, en Europe et dans le monde.`}
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-900">
                   <a
@@ -809,25 +827,25 @@ export default function App() {
 
             {/* 4-Column Precision Telemetry Readout Strip with Explicit Source Links */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-slate-200 bg-white divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mb-8 sm:mb-10">
-              {/* Metric 1: CO2 */}
+              {/* Metric 1: CO2 in Tonnes of CO2 */}
               <div className="p-5 sm:p-6 flex flex-col justify-between">
                 <div>
                   <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
-                    <span>{isEn ? 'CO₂ (Mauna Loa)' : 'CO₂ (Mauna Loa)'}</span>
+                    <span>{isEn ? 'CO₂ Emissions (Mauna Loa)' : 'Émissions CO₂ (Mauna Loa)'}</span>
                     <span className="text-[10px] text-emerald-700">{atmospheric.co2DateLabel}</span>
                   </div>
-                  <div className="mt-2 flex items-baseline">
-                    <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
-                      {atmospheric.co2Ppm.toFixed(2)}
+                  <div className="mt-2 flex items-baseline flex-wrap gap-x-1.5">
+                    <span className="text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
+                      {isEn ? '41.6B' : '41,6 Mrd'}
                     </span>
-                    <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
-                      ppm
+                    <span className="text-xs font-mono-tabular text-slate-500 font-semibold">
+                      {isEn ? 'tonnes CO₂ / yr' : 'tonnes de CO₂ / an'}
                     </span>
                   </div>
                   <div className="mt-2 text-xs font-mono-tabular text-rose-600">
                     {isEn
-                      ? `DELTA: +${co2AnnualDelta} ppm / 12 mo (+52% vs 1850)`
-                      : `DELTA : +${co2AnnualDelta} ppm / 12 mois (+52 % vs 1850)`}
+                      ? `NET +${(Number(co2AnnualDelta) * 7.82).toFixed(1)}B tCO₂/yr (${atmospheric.co2Ppm.toFixed(2)} ppm)`
+                      : `AJOUT NET : +${(Number(co2AnnualDelta) * 7.82).toFixed(1).replace('.', ',')} Mrd tCO₂/an (${atmospheric.co2Ppm.toFixed(2)} ppm)`}
                   </div>
                 </div>
                 <a
@@ -836,7 +854,7 @@ export default function App() {
                   rel="noopener noreferrer"
                   className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
                 >
-                  <span>Source : NOAA GML Direct Feed</span>
+                  <span>Source : NOAA GML & Global Carbon</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -849,7 +867,7 @@ export default function App() {
                     <span className="text-[10px] text-emerald-700">{atmospheric.tempDateLabel}</span>
                   </div>
                   <div className="mt-2 flex items-baseline">
-                    <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-rose-600">
+                    <span className="text-2xl lg:text-3xl font-mono-tabular font-bold text-rose-600">
                       +{atmospheric.tempAnomalyC.toFixed(2)}
                     </span>
                     <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
@@ -858,8 +876,8 @@ export default function App() {
                   </div>
                   <div className="mt-2 text-xs font-mono-tabular text-amber-700">
                     {isEn
-                      ? 'RATE: +0.26 °C / current decade'
-                      : 'CADENCE : +0,26 °C / décennie actuelle'}
+                      ? '1.5°C BUDGET LEFT: 200B tonnes CO₂'
+                      : 'BUDGET 1,5°C RESTANT : 200 Mrd tCO₂'}
                   </div>
                 </div>
                 <a
@@ -873,25 +891,25 @@ export default function App() {
                 </a>
               </div>
 
-              {/* Metric 3: Atmospheric Methane */}
+              {/* Metric 3: Atmospheric Methane in Tonnes of CO2 equivalent */}
               <div className="p-5 sm:p-6 flex flex-col justify-between">
                 <div>
                   <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
-                    <span>{isEn ? 'Methane (CH₄)' : 'Méthane (CH₄)'}</span>
+                    <span>{isEn ? 'Methane (CH₄ in tCO₂)' : 'Méthane (CH₄ en tCO₂)'}</span>
                     <span className="text-[10px] text-emerald-700">{atmospheric.ch4DateLabel}</span>
                   </div>
-                  <div className="mt-2 flex items-baseline">
-                    <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
-                      {atmospheric.ch4Ppb.toFixed(1)}
+                  <div className="mt-2 flex items-baseline flex-wrap gap-x-1.5">
+                    <span className="text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
+                      {isEn ? '11.2B' : '11,2 Mrd'}
                     </span>
-                    <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
-                      ppb
+                    <span className="text-xs font-mono-tabular text-slate-500 font-semibold">
+                      {isEn ? 'tonnes CO₂ / yr' : 'tonnes de CO₂ / an'}
                     </span>
                   </div>
                   <div className="mt-2 text-xs font-mono-tabular text-emerald-700">
                     {isEn
-                      ? `DELTA: +${ch4AnnualDelta} ppb / yr (84× GWP-20)`
-                      : `DELTA : +${ch4AnnualDelta} ppb / an (PRG 84× sur 20 ans)`}
+                      ? `CONC: ${atmospheric.ch4Ppb.toFixed(1)} ppb (+${ch4AnnualDelta} ppb/yr · 84× CO₂)`
+                      : `CONC : ${atmospheric.ch4Ppb.toFixed(1)} ppb (+${ch4AnnualDelta} ppb/an · 84× CO₂)`}
                   </div>
                 </div>
                 <a
@@ -905,25 +923,25 @@ export default function App() {
                 </a>
               </div>
 
-              {/* Metric 4: Global Deforestation & Wildlife LPI */}
+              {/* Metric 4: Global Deforestation in Tonnes of CO2 & Wildlife LPI */}
               <div className="p-5 sm:p-6 flex flex-col justify-between">
                 <div>
                   <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
                     <span>{isEn ? 'Deforestation & Fauna' : 'Déforestation & Faune'}</span>
                     <span className="text-[10px] text-rose-600">FAO / WWF</span>
                   </div>
-                  <div className="mt-2 flex items-baseline">
-                    <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
-                      -10,0
+                  <div className="mt-2 flex items-baseline flex-wrap gap-x-1.5">
+                    <span className="text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
+                      {isEn ? '3.8B' : '3,8 Mrd'}
                     </span>
-                    <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
-                      {isEn ? 'M ha forests / yr' : 'M ha forêts / an'}
+                    <span className="text-xs font-mono-tabular text-slate-500 font-semibold">
+                      {isEn ? 'tonnes CO₂ / yr' : 'tonnes de CO₂ / an'}
                     </span>
                   </div>
                   <div className="mt-2 text-xs font-mono-tabular text-rose-600">
                     {isEn
-                      ? 'WWF LIVING PLANET INDEX: -73% (1970–2020)'
-                      : 'INDICE PLANÈTE VIVANTE WWF : -73 % (1970–2020)'}
+                      ? '-10M ha forests/yr · WWF Wildlife: -73%'
+                      : '-10 M ha forêts/an · Faune WWF : -73 %'}
                   </div>
                 </div>
                 <a
@@ -942,6 +960,9 @@ export default function App() {
             <HistoricalCorrelationChart lang={lang} />
           </div>
         </section>
+
+        {/* Interactive 3D Planet Earth — Real-Time Dry/Humid Zones, Rain & Snowfall (France & World) */}
+        <PlanetEarth3DSection lang={lang} />
 
         {/* Section 2: Global Causes by Sector & Sub-sectors */}
         <SectorCausesExplorer lang={lang} />

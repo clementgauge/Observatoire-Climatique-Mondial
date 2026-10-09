@@ -193,7 +193,7 @@ export const TrajectorySimulator2100: React.FC<Props> = ({ lang }) => {
                       : 'Cible : Centrales thermiques (31,4 % des GES)'}
                   </span>
                   <span className="font-mono-tabular">
-                    -{((sliders.coalPhaseout / 100) * 16.4).toFixed(1)} {isEn ? 'Gt/yr' : 'Gt/an'}
+                    -{Math.round((sliders.coalPhaseout / 100) * 16.4 * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} {isEn ? 'tCO₂/yr' : 'tCO₂/an'}
                   </span>
                 </div>
               </div>
@@ -227,7 +227,7 @@ export const TrajectorySimulator2100: React.FC<Props> = ({ lang }) => {
                       : 'Cible : Torchage pétrolier & biogaz de décharge'}
                   </span>
                   <span className="font-mono-tabular">
-                    -{((sliders.methaneAbatement / 100) * 8.2).toFixed(1)} {isEn ? 'Gt/yr' : 'Gt/an'}
+                    -{Math.round((sliders.methaneAbatement / 100) * 8.2 * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} {isEn ? 'tCO₂/yr' : 'tCO₂/an'}
                   </span>
                 </div>
               </div>
@@ -261,7 +261,7 @@ export const TrajectorySimulator2100: React.FC<Props> = ({ lang }) => {
                       : 'Cible : Forêts primaires, tourbières & élevage'}
                   </span>
                   <span className="font-mono-tabular">
-                    -{((sliders.reforestationAndDiet / 100) * 10.5).toFixed(1)} {isEn ? 'Gt/yr' : 'Gt/an'}
+                    -{Math.round((sliders.reforestationAndDiet / 100) * 10.5 * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} {isEn ? 'tCO₂/yr' : 'tCO₂/an'}
                   </span>
                 </div>
               </div>
@@ -297,7 +297,7 @@ export const TrajectorySimulator2100: React.FC<Props> = ({ lang }) => {
                       : 'Cible : Routier, fret lourd & carburants aviation'}
                   </span>
                   <span className="font-mono-tabular">
-                    -{((sliders.transportElectrification / 100) * 8.6).toFixed(1)} {isEn ? 'Gt/yr' : 'Gt/an'}
+                    -{Math.round((sliders.transportElectrification / 100) * 8.6 * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} {isEn ? 'tCO₂/yr' : 'tCO₂/an'}
                   </span>
                 </div>
               </div>
@@ -331,7 +331,7 @@ export const TrajectorySimulator2100: React.FC<Props> = ({ lang }) => {
                       : 'Cible : Hauts-fourneaux, chimie & cimenteries'}
                   </span>
                   <span className="font-mono-tabular">
-                    -{((sliders.industrialDecarb / 100) * 10.2).toFixed(1)} {isEn ? 'Gt/yr' : 'Gt/an'}
+                    -{Math.round((sliders.industrialDecarb / 100) * 10.2 * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} {isEn ? 'tCO₂/yr' : 'tCO₂/an'}
                   </span>
                 </div>
               </div>
@@ -342,7 +342,7 @@ export const TrajectorySimulator2100: React.FC<Props> = ({ lang }) => {
                 {isEn ? 'Total simulated abatement by 2050:' : 'Abattement total simulé d’ici 2050 :'}
               </span>
               <span className="font-mono-tabular font-bold text-emerald-700 text-sm">
-                -{simulation.totalAbated2050.toFixed(1)} {isEn ? 'GtCO₂e / yr' : 'GtCO₂e / an'}
+                -{Math.round(simulation.totalAbated2050 * 1_000_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')} {isEn ? 'tonnes CO₂/yr' : 'tonnes de CO₂/an'}
               </span>
             </div>
           </div>
@@ -377,10 +377,10 @@ export const TrajectorySimulator2100: React.FC<Props> = ({ lang }) => {
                   <div className="text-xs text-slate-500">
                     {isEn ? 'Residual Emissions (2050)' : 'Émissions Résiduelles (2050)'}
                   </div>
-                  <div className="text-2xl sm:text-3xl font-mono-tabular font-bold text-amber-700 mt-1">
-                    {simulation.projected2050Gt.toFixed(1)}
-                    <span className="text-xs font-normal text-slate-500 ml-1">
-                      {isEn ? 'GtCO₂e/yr' : 'GtCO₂e/an'}
+                  <div className="text-xl sm:text-2xl font-mono-tabular font-bold text-amber-700 mt-1">
+                    {simulation.projected2050Gt.toFixed(1)} {isEn ? 'B' : 'Mrd'}
+                    <span className="text-xs font-normal text-slate-500 ml-1 block sm:inline">
+                      {isEn ? 'tonnes CO₂/yr' : 'tonnes de CO₂/an'}
                     </span>
                   </div>
                 </div>
@@ -532,8 +532,8 @@ export const TrajectorySimulator2100: React.FC<Props> = ({ lang }) => {
               </span>
               <span className="font-mono-tabular">
                 {isEn
-                  ? 'Climate sensitivity: ~0.45 °C / 1000 GtCO₂'
-                  : 'Sensibilité climatique : ~0,45 °C / 1000 GtCO₂'}
+                  ? 'Climate sensitivity: ~0.45 °C / 1,000B tonnes CO₂'
+                  : 'Sensibilité climatique : ~0,45 °C / 1 000 Mrd tonnes de CO₂'}
               </span>
             </div>
           </div>

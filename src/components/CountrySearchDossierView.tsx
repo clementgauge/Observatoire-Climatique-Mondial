@@ -197,16 +197,18 @@ export const CountrySearchDossierView: React.FC<Props> = ({
 
         {/* 6-Card National Key Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 border border-slate-200 bg-white divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mt-8">
-          {/* KPI 1: Annual GHG Emissions */}
+          {/* KPI 1: Annual GHG Emissions in Tonnes of CO2 */}
           <div className="p-5 sm:p-6">
             <div className="text-xs font-mono-tabular uppercase text-slate-400">
-              {isEn ? '1. Annual Territorial GHG Emissions' : '1. Émissions Annuelles de GES'}
+              {isEn ? '1. Annual Emissions (tonnes CO₂)' : '1. Émissions Annuelles (tonnes de CO₂)'}
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
-                {country.annualMtCO2e.toLocaleString(isEn ? 'en-US' : 'fr-FR')}
+            <div className="mt-2 flex items-baseline flex-wrap gap-2">
+              <span className="text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
+                {(country.annualMtCO2e * 1_000_000).toLocaleString(isEn ? 'en-US' : 'fr-FR')}
               </span>
-              <span className="text-xs font-mono-tabular text-slate-500">MtCO₂eq / {isEn ? 'yr' : 'an'}</span>
+              <span className="text-xs font-mono-tabular text-slate-500">
+                {isEn ? 'tonnes CO₂ / yr' : 'tonnes de CO₂ / an'}
+              </span>
             </div>
             <div
               className={`mt-2 text-xs font-mono-tabular font-semibold ${
@@ -220,23 +222,23 @@ export const CountrySearchDossierView: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* KPI 2: Per Capita Footprint */}
+          {/* KPI 2: Per Capita Footprint in Tonnes of CO2 */}
           <div className="p-5 sm:p-6">
             <div className="text-xs font-mono-tabular uppercase text-slate-400">
-              {isEn ? '2. Per Capita Carbon Footprint' : '2. Empreinte par Habitant'}
+              {isEn ? '2. Per Capita Footprint (tCO₂)' : '2. Empreinte par Habitant (tCO₂)'}
             </div>
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-3xl lg:text-4xl font-mono-tabular font-bold text-slate-900">
                 {country.perCapitaTonnes.toFixed(2)}
               </span>
               <span className="text-xs font-mono-tabular text-slate-500">
-                tCO₂ / {isEn ? 'capita / yr' : 'hab / an'}
+                {isEn ? 'tonnes CO₂ / cap / yr' : 'tonnes de CO₂ / hab / an'}
               </span>
             </div>
             <div className="mt-2 text-xs font-mono-tabular text-amber-700">
               {isEn
-                ? `${perCapitaRatio}× global average (4.7 t/cap)`
-                : `${perCapitaRatio}× la moyenne mondiale (4,7 t/hab)`}
+                ? `${perCapitaRatio}× global average (4.7 tonnes CO₂/cap)`
+                : `${perCapitaRatio}× la moyenne mondiale (4,7 tonnes de CO₂/hab)`}
             </div>
           </div>
 
@@ -348,37 +350,42 @@ export const CountrySearchDossierView: React.FC<Props> = ({
               </h2>
 
               <div className="mt-6 space-y-4">
-                {country.sectors.map((sec, idx) => (
-                  <div key={idx} className="p-3.5 bg-[#F8FAFC] border border-slate-200">
-                    <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
-                      <span className="font-semibold text-slate-900">
-                        {isEn ? sec.sectorEn : sec.sectorFr}
-                      </span>
-                      <span className="font-mono-tabular font-bold text-slate-900 shrink-0">
-                        {sec.sharePercent.toFixed(1)}%
-                      </span>
+                {country.sectors.map((sec, idx) => {
+                  const sectorTonnesCO2 = Math.round(
+                    country.annualMtCO2e * 1_000_000 * (sec.sharePercent / 100)
+                  );
+                  return (
+                    <div key={idx} className="p-3.5 bg-[#F8FAFC] border border-slate-200">
+                      <div className="flex items-center justify-between gap-2 text-xs sm:text-sm">
+                        <span className="font-semibold text-slate-900">
+                          {isEn ? sec.sectorEn : sec.sectorFr}
+                        </span>
+                        <span className="font-mono-tabular font-bold text-slate-900 shrink-0">
+                          {sectorTonnesCO2.toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO₂/{isEn ? 'yr' : 'an'} ({sec.sharePercent.toFixed(1)}%)
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-200 mt-2 overflow-hidden">
+                        <div
+                          className="h-full"
+                          style={{
+                            width: `${Math.min(100, sec.sharePercent)}%`,
+                            backgroundColor: sec.color
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                        {isEn ? sec.detailEn : sec.detailFr}
+                      </p>
                     </div>
-                    <div className="w-full h-2 bg-slate-200 mt-2 overflow-hidden">
-                      <div
-                        className="h-full"
-                        style={{
-                          width: `${Math.min(100, sec.sharePercent)}%`,
-                          backgroundColor: sec.color
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                      {isEn ? sec.detailEn : sec.detailFr}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500 font-mono-tabular">
               {isEn
-                ? `Total national inventory: ${country.annualMtCO2e} MtCO₂eq/yr (EDGAR JRC / National Inventory)`
-                : `Inventaire national total : ${country.annualMtCO2e} MtCO₂eq/an (EDGAR JRC / Inventaire officiel)`}
+                ? `Total national inventory: ${(country.annualMtCO2e * 1_000_000).toLocaleString('en-US')} tonnes CO₂/yr (EDGAR JRC / National Inventory)`
+                : `Inventaire national total : ${(country.annualMtCO2e * 1_000_000).toLocaleString('fr-FR')} tonnes de CO₂/an (EDGAR JRC / Inventaire officiel)`}
             </div>
           </div>
 
