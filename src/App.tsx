@@ -22,12 +22,14 @@ import { TrajectorySimulator2100 } from './components/TrajectorySimulator2100';
 import { SeoClimateKnowledgeBaseSection } from './components/SeoClimateKnowledgeBaseSection';
 import { ScientificMethodologySection } from './components/ScientificMethodologySection';
 import { CountrySearchDossierView } from './components/CountrySearchDossierView';
+import { ClimateActionLinksSection } from './components/ClimateActionLinksSection';
+import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallButton';
 import {
   ALL_COUNTRY_DOSSIERS,
   CountryFullDossier,
   searchCountryDossiers
 } from './data/countryFullDossiers';
-import { RefreshCw, ArrowDownRight, FileText, Menu, X, ExternalLink, Search, Globe } from 'lucide-react';
+import { RefreshCw, ArrowDownRight, FileText, Menu, X, ExternalLink, Search, Globe, HeartHandshake, Trees, Calculator } from 'lucide-react';
 import { Language } from './data/climateDatasets';
 
 const SCROLL_STORAGE_KEY = 'climate_obs_scroll_y';
@@ -435,6 +437,13 @@ export default function App() {
               {isEn ? '3D Planet Earth' : 'Planète Terre 3D'}
             </a>
             <a
+              href="#agir-climat"
+              onClick={() => handleClearCountrySearch()}
+              className="text-amber-700 hover:text-amber-900 font-semibold hover:underline underline-offset-4 transition-colors whitespace-nowrap"
+            >
+              {isEn ? 'Act: WWF & Trees' : 'Agir : Don WWF & Arbres'}
+            </a>
+            <a
               href="#causes-mondiales"
               onClick={() => handleClearCountrySearch()}
               className="hover:text-slate-900 hover:underline underline-offset-4 transition-colors whitespace-nowrap"
@@ -471,8 +480,10 @@ export default function App() {
             </a>
           </nav>
 
-          {/* Zone 3: Language Switcher Links (/ and /en) + Primary Export PDF Action + Mobile Menu Trigger */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Zone 3: Language Switcher Links (/ and /en) + PWA Install + Primary Export PDF Action + Mobile Menu Trigger */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <PWAInstallButton lang={lang} variant="compact" />
+
             <div
               role="group"
               aria-label={isEn ? 'Language selector' : 'Sélecteur de langue'}
@@ -555,6 +566,16 @@ export default function App() {
                 {isEn ? '3D Planet Earth' : 'Planète Terre 3D'}
               </a>
               <a
+                href="#agir-climat"
+                onClick={() => {
+                  handleClearCountrySearch();
+                  setMobileMenuOpen(false);
+                }}
+                className="px-3 py-2 bg-amber-50 border border-amber-200 text-amber-900 font-semibold rounded-md hover:bg-amber-100"
+              >
+                {isEn ? 'Act: WWF & Plant Trees' : 'Agir : Don WWF & Arbres'}
+              </a>
+              <a
                 href="#causes-mondiales"
                 onClick={() => {
                   handleClearCountrySearch();
@@ -605,28 +626,31 @@ export default function App() {
                 {isEn ? '06. Scientific Sources' : '06. Sources Scientifiques'}
               </a>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                handleExportPdf();
-                setMobileMenuOpen(false);
-              }}
-              className="mt-1 px-3 py-2.5 bg-slate-900 text-white rounded-md flex items-center justify-center gap-1.5 text-xs font-medium cursor-pointer"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>{isEn ? 'Export Full Report (PDF)' : 'Exporter le Rapport Complet (PDF)'}</span>
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+              <PWAInstallButton lang={lang} variant="mobile" />
+              <button
+                type="button"
+                onClick={() => {
+                  handleExportPdf();
+                  setMobileMenuOpen(false);
+                }}
+                className="px-3 py-2.5 bg-slate-900 text-white rounded-md flex items-center justify-center gap-1.5 text-xs font-medium cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>{isEn ? 'Export Full Report (PDF)' : 'Exporter le Rapport Complet (PDF)'}</span>
+              </button>
+            </div>
           </nav>
         )}
       </header>
 
-      {/* Country Intelligence Search Bar Deck — Always accessible at the top */}
-      <div className="bg-white border-b border-slate-200 py-4 px-4 sm:px-6 lg:px-8 shadow-2xs">
+      {/* Country Intelligence Search Bar Deck — Ultra-compact on mobile so 4 data cards appear immediately */}
+      <div className="bg-white border-b border-slate-200 py-2.5 sm:py-4 px-3 sm:px-6 lg:px-8 shadow-2xs">
         <div className="max-w-[1360px] mx-auto">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 sm:gap-3">
             {/* Search Input Box */}
             <div className="relative flex-1 max-w-2xl">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="search"
                 value={countryQuery}
@@ -636,15 +660,15 @@ export default function App() {
                 }}
                 placeholder={
                   isEn
-                    ? 'Search a country (e.g., France, Brazil, USA, Morocco, Switzerland, Canada...) — Leave empty for Global View'
-                    : 'Rechercher un pays (ex : France, Brésil, États-Unis, Maroc, Suisse, Canada...) — Laissez vide pour la vue mondiale'
+                    ? 'Search a country (France, Brazil, USA, Canada...)'
+                    : 'Rechercher un pays (ex : France, Brésil, Canada, Maroc...)'
                 }
                 aria-label={
                   isEn
                     ? 'Search any country for its complete climate dossier'
                     : 'Rechercher un pays pour afficher toutes ses informations climatiques'
                 }
-                className="w-full pl-10 pr-28 py-2.5 bg-[#F8FAFC] border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white transition-colors"
+                className="w-full pl-9 pr-24 py-2 sm:py-2.5 bg-[#F8FAFC] border border-slate-300 rounded-lg text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white transition-colors"
               />
               {countryQuery.trim().length > 0 && (
                 <button
@@ -748,10 +772,10 @@ export default function App() {
           )
         ) : (
           <>
-            <section id="observatoire" className="pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-16 lg:pb-20">
-          <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Quiet Unboxed Editorial Metadata with Explicit Institutional Attribution */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-slate-200 text-xs text-slate-500">
+            <section id="observatoire" className="pt-3 pb-8 sm:pt-10 sm:pb-16 lg:pt-14 lg:pb-20">
+          <div className="max-w-[1360px] mx-auto px-3 sm:px-6 lg:px-8">
+            {/* Quiet Unboxed Editorial Metadata — Hidden on small phone top fold so 4 metrics appear immediately */}
+            <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-slate-200 text-xs text-slate-500">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 font-mono-tabular text-emerald-700 font-medium">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20" />
@@ -794,8 +818,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* Editorial Headline & Lead Narrative */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 py-8 sm:py-10 items-end">
+            {/* Editorial Headline & Lead Narrative — Shown above cards on Desktop (md+), moved below cards on Mobile so phone users see the 4 metrics right away */}
+            <div className="hidden md:grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 py-8 sm:py-10 items-end">
               <div className="lg:col-span-8">
                 <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display text-slate-900 leading-[1.08] tracking-tight">
                   {isEn
@@ -811,13 +835,13 @@ export default function App() {
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-slate-900">
                   <a
-                    href="#deforestation-wwf-actions"
-                    className="inline-flex items-center gap-1 text-emerald-700 hover:underline underline-offset-4"
+                    href="#agir-climat"
+                    className="inline-flex items-center gap-1 text-emerald-700 hover:underline underline-offset-4 font-semibold"
                   >
                     <span>
                       {isEn
-                        ? 'Explore Deforestation, WWF Wildlife & France/EU Laws'
-                        : 'Voir Déforestation, Actions WWF & Mesures France/Monde'}
+                        ? 'Take Action: Donate to WWF France & Plant Trees'
+                        : 'Agir maintenant : Don WWF France & Planter des arbres'}
                     </span>
                     <ArrowDownRight className="w-4 h-4" />
                   </a>
@@ -825,133 +849,194 @@ export default function App() {
               </div>
             </div>
 
-            {/* 4-Column Precision Telemetry Readout Strip with Explicit Source Links */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border border-slate-200 bg-white divide-y sm:divide-y-0 sm:divide-x divide-slate-200 mb-8 sm:mb-10">
+            {/* Compact Mobile Live Status Strip (Phone only) */}
+            <div className="flex md:hidden items-center justify-between gap-2 pb-2.5 text-[11px] font-mono-tabular text-slate-600">
+              <span className="inline-flex items-center gap-1.5 text-emerald-700 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{isEn ? 'LIVE CLIMATE DATA' : 'DONNÉES EN DIRECT'}</span>
+              </span>
+              <span className="text-rose-600 font-semibold">
+                +{tonnesEmittedSession.toLocaleString(isEn ? 'en-US' : 'fr-FR')} tCO₂
+              </span>
+            </div>
+
+            {/* 4-Column Precision Telemetry Readout Strip — 2x2 Grid on Mobile so all 4 metrics appear immediately on phone screen */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 border border-slate-200 bg-white rounded-lg sm:rounded-none overflow-hidden mb-4 sm:mb-6">
               {/* Metric 1: CO2 in Tonnes of CO2 */}
-              <div className="p-5 sm:p-6 flex flex-col justify-between">
+              <div className="p-3 sm:p-6 border-b border-r border-slate-200 lg:border-b-0 flex flex-col justify-between">
                 <div>
-                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
-                    <span>{isEn ? 'CO₂ Emissions (Mauna Loa)' : 'Émissions CO₂ (Mauna Loa)'}</span>
-                    <span className="text-[10px] text-emerald-700">{atmospheric.co2DateLabel}</span>
+                  <div className="text-[10px] sm:text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between gap-1">
+                    <span className="truncate">{isEn ? 'CO₂ Emissions' : 'Émissions CO₂'}</span>
+                    <span className="hidden sm:inline text-[10px] text-emerald-700">{atmospheric.co2DateLabel}</span>
                   </div>
-                  <div className="mt-2 flex items-baseline flex-wrap gap-x-1.5">
-                    <span className="text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
+                  <div className="mt-1 sm:mt-2 flex items-baseline flex-wrap gap-x-1">
+                    <span className="text-lg sm:text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
                       {isEn ? '41.6B' : '41,6 Mrd'}
                     </span>
-                    <span className="text-xs font-mono-tabular text-slate-500 font-semibold">
-                      {isEn ? 'tonnes CO₂ / yr' : 'tonnes de CO₂ / an'}
+                    <span className="text-[10px] sm:text-xs font-mono-tabular text-slate-500 font-semibold">
+                      {isEn ? 'tCO₂/yr' : 'tCO₂/an'}
                     </span>
                   </div>
-                  <div className="mt-2 text-xs font-mono-tabular text-rose-600">
+                  <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-mono-tabular text-rose-600 leading-tight">
                     {isEn
-                      ? `NET +${(Number(co2AnnualDelta) * 7.82).toFixed(1)}B tCO₂/yr (${atmospheric.co2Ppm.toFixed(2)} ppm)`
-                      : `AJOUT NET : +${(Number(co2AnnualDelta) * 7.82).toFixed(1).replace('.', ',')} Mrd tCO₂/an (${atmospheric.co2Ppm.toFixed(2)} ppm)`}
+                      ? `+${(Number(co2AnnualDelta) * 7.82).toFixed(1)}B tCO₂ (${atmospheric.co2Ppm.toFixed(1)} ppm)`
+                      : `+${(Number(co2AnnualDelta) * 7.82).toFixed(1).replace('.', ',')} Mrd tCO₂ (${atmospheric.co2Ppm.toFixed(1)} ppm)`}
                   </div>
                 </div>
                 <a
                   href="https://gml.noaa.gov/ccgg/trends/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+                  className="mt-2 sm:mt-3 pt-1.5 sm:pt-2 border-t border-slate-100 text-[10px] sm:text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 truncate"
                 >
-                  <span>Source : NOAA GML & Global Carbon</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <span className="truncate">NOAA GML</span>
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                 </a>
               </div>
 
               {/* Metric 2: Temperature Anomaly */}
-              <div className="p-5 sm:p-6 flex flex-col justify-between">
+              <div className="p-3 sm:p-6 border-b border-slate-200 lg:border-b-0 lg:border-r flex flex-col justify-between">
                 <div>
-                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
-                    <span>{isEn ? 'Thermal Anomaly' : 'Anomalie Thermique'}</span>
-                    <span className="text-[10px] text-emerald-700">{atmospheric.tempDateLabel}</span>
+                  <div className="text-[10px] sm:text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between gap-1">
+                    <span className="truncate">{isEn ? 'Warming' : 'Réchauffement'}</span>
+                    <span className="hidden sm:inline text-[10px] text-emerald-700">{atmospheric.tempDateLabel}</span>
                   </div>
-                  <div className="mt-2 flex items-baseline">
-                    <span className="text-2xl lg:text-3xl font-mono-tabular font-bold text-rose-600">
-                      +{atmospheric.tempAnomalyC.toFixed(2)}
+                  <div className="mt-1 sm:mt-2 flex items-baseline flex-wrap gap-x-1">
+                    <span className="text-lg sm:text-2xl lg:text-3xl font-mono-tabular font-bold text-rose-600">
+                      +{atmospheric.tempAnomalyC.toFixed(2)}°C
                     </span>
-                    <span className="text-xs uppercase font-mono-tabular text-slate-400 ml-1.5">
-                      °C vs 1850–1900
+                    <span className="text-[10px] sm:text-xs uppercase font-mono-tabular text-slate-400">
+                      vs 1850
                     </span>
                   </div>
-                  <div className="mt-2 text-xs font-mono-tabular text-amber-700">
+                  <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-mono-tabular text-amber-700 leading-tight">
                     {isEn
-                      ? '1.5°C BUDGET LEFT: 200B tonnes CO₂'
-                      : 'BUDGET 1,5°C RESTANT : 200 Mrd tCO₂'}
+                      ? '1.5°C Budget: 200B tCO₂'
+                      : 'Budget 1,5°C : 200 Mrd tCO₂'}
                   </div>
                 </div>
                 <a
                   href="https://data.giss.nasa.gov/gistemp/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+                  className="mt-2 sm:mt-3 pt-1.5 sm:pt-2 border-t border-slate-100 text-[10px] sm:text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 truncate"
                 >
-                  <span>Source : NASA GISS / Copernicus ERA5</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <span className="truncate">NASA GISS / ERA5</span>
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                 </a>
               </div>
 
               {/* Metric 3: Atmospheric Methane in Tonnes of CO2 equivalent */}
-              <div className="p-5 sm:p-6 flex flex-col justify-between">
+              <div className="p-3 sm:p-6 border-r border-slate-200 flex flex-col justify-between">
                 <div>
-                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
-                    <span>{isEn ? 'Methane (CH₄ in tCO₂)' : 'Méthane (CH₄ en tCO₂)'}</span>
-                    <span className="text-[10px] text-emerald-700">{atmospheric.ch4DateLabel}</span>
+                  <div className="text-[10px] sm:text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between gap-1">
+                    <span className="truncate">{isEn ? 'Methane (CH₄)' : 'Méthane (CH₄)'}</span>
+                    <span className="hidden sm:inline text-[10px] text-emerald-700">{atmospheric.ch4DateLabel}</span>
                   </div>
-                  <div className="mt-2 flex items-baseline flex-wrap gap-x-1.5">
-                    <span className="text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
+                  <div className="mt-1 sm:mt-2 flex items-baseline flex-wrap gap-x-1">
+                    <span className="text-lg sm:text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
                       {isEn ? '11.2B' : '11,2 Mrd'}
                     </span>
-                    <span className="text-xs font-mono-tabular text-slate-500 font-semibold">
-                      {isEn ? 'tonnes CO₂ / yr' : 'tonnes de CO₂ / an'}
+                    <span className="text-[10px] sm:text-xs font-mono-tabular text-slate-500 font-semibold">
+                      {isEn ? 'tCO₂/yr' : 'tCO₂/an'}
                     </span>
                   </div>
-                  <div className="mt-2 text-xs font-mono-tabular text-emerald-700">
+                  <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-mono-tabular text-emerald-700 leading-tight">
                     {isEn
-                      ? `CONC: ${atmospheric.ch4Ppb.toFixed(1)} ppb (+${ch4AnnualDelta} ppb/yr · 84× CO₂)`
-                      : `CONC : ${atmospheric.ch4Ppb.toFixed(1)} ppb (+${ch4AnnualDelta} ppb/an · 84× CO₂)`}
+                      ? `${atmospheric.ch4Ppb.toFixed(0)} ppb (84× CO₂)`
+                      : `${atmospheric.ch4Ppb.toFixed(0)} ppb (84× CO₂)`}
                   </div>
                 </div>
                 <a
                   href="https://gml.noaa.gov/ccgg/trends_ch4/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+                  className="mt-2 sm:mt-3 pt-1.5 sm:pt-2 border-t border-slate-100 text-[10px] sm:text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 truncate"
                 >
-                  <span>Source : NOAA Global CH₄ Network</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <span className="truncate">NOAA CH₄</span>
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                 </a>
               </div>
 
               {/* Metric 4: Global Deforestation in Tonnes of CO2 & Wildlife LPI */}
-              <div className="p-5 sm:p-6 flex flex-col justify-between">
+              <div className="p-3 sm:p-6 flex flex-col justify-between">
                 <div>
-                  <div className="text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between">
-                    <span>{isEn ? 'Deforestation & Fauna' : 'Déforestation & Faune'}</span>
-                    <span className="text-[10px] text-rose-600">FAO / WWF</span>
+                  <div className="text-[10px] sm:text-xs tracking-wider uppercase text-slate-400 font-mono-tabular flex items-center justify-between gap-1">
+                    <span className="truncate">{isEn ? 'Deforestation' : 'Déforestation'}</span>
+                    <span className="hidden sm:inline text-[10px] text-rose-600">FAO / WWF</span>
                   </div>
-                  <div className="mt-2 flex items-baseline flex-wrap gap-x-1.5">
-                    <span className="text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
+                  <div className="mt-1 sm:mt-2 flex items-baseline flex-wrap gap-x-1">
+                    <span className="text-lg sm:text-2xl lg:text-3xl font-mono-tabular font-bold text-slate-900">
                       {isEn ? '3.8B' : '3,8 Mrd'}
                     </span>
-                    <span className="text-xs font-mono-tabular text-slate-500 font-semibold">
-                      {isEn ? 'tonnes CO₂ / yr' : 'tonnes de CO₂ / an'}
+                    <span className="text-[10px] sm:text-xs font-mono-tabular text-slate-500 font-semibold">
+                      {isEn ? 'tCO₂/yr' : 'tCO₂/an'}
                     </span>
                   </div>
-                  <div className="mt-2 text-xs font-mono-tabular text-rose-600">
+                  <div className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-mono-tabular text-rose-600 leading-tight">
                     {isEn
-                      ? '-10M ha forests/yr · WWF Wildlife: -73%'
-                      : '-10 M ha forêts/an · Faune WWF : -73 %'}
+                      ? '-10M ha/yr · Fauna -73%'
+                      : '-10 M ha/an · Faune -73 %'}
                   </div>
                 </div>
                 <a
                   href="https://www.wwf.fr/rapport-planete-vivante"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 pt-2 border-t border-slate-100 text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+                  className="mt-2 sm:mt-3 pt-1.5 sm:pt-2 border-t border-slate-100 text-[10px] sm:text-[11px] font-mono-tabular text-slate-500 hover:text-slate-900 inline-flex items-center gap-1 truncate"
                 >
-                  <span>Source : WWF France & FAO FRA</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <span className="truncate">WWF & FAO</span>
+                  <ExternalLink className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                </a>
+              </div>
+            </div>
+
+            {/* Quick Climate Action & 3D Earth Strip right below the 4 metrics */}
+            <div className="mb-8 sm:mb-10 p-3 sm:p-4 bg-emerald-950 text-white rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="text-xs sm:text-sm font-medium text-emerald-100">
+                <strong className="text-white">
+                  {isEn ? 'Act against global warming:' : 'Agir contre le réchauffement :'}
+                </strong>{' '}
+                {isEn
+                  ? 'Support wildlife & forests or plant trees right now.'
+                  : 'Soutenez directement la protection des forêts et de la faune ou plantez des arbres.'}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <a
+                  href="https://faireundon.wwf.fr/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <HeartHandshake className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isEn ? 'Donate to WWF France' : 'Faire un don WWF France'}</span>
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+                <a
+                  href="https://www.reforestaction.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-md bg-white/15 hover:bg-white/25 text-white font-semibold text-xs inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <Trees className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                  <span>{isEn ? 'Plant Trees' : 'Planter des arbres'}</span>
+                  <ExternalLink className="w-3 h-3 shrink-0" />
+                </a>
+                <a
+                  href="https://nosgestesclimat.fr/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-emerald-100 font-medium text-xs inline-flex items-center gap-1.5 transition-colors"
+                >
+                  <Calculator className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <span>{isEn ? 'CO₂ Calculator (ADEME)' : 'Calculateur CO₂ (ADEME)'}</span>
+                </a>
+                <a
+                  href="#planete-terre-3d"
+                  className="px-3 py-1.5 rounded-md border border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/60 font-mono-tabular text-xs inline-flex items-center gap-1 transition-colors"
+                >
+                  <Globe className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isEn ? '3D Earth' : 'Planète 3D'}</span>
                 </a>
               </div>
             </div>
@@ -963,6 +1048,9 @@ export default function App() {
 
         {/* Interactive 3D Planet Earth — Real-Time Dry/Humid Zones, Rain & Snowfall (France & World) */}
         <PlanetEarth3DSection lang={lang} />
+
+        {/* Dedicated Action Section: Donate to WWF France, Plant Trees, ADEME Calculator, Oceans */}
+        <ClimateActionLinksSection lang={lang} />
 
         {/* Section 2: Global Causes by Sector & Sub-sectors */}
         <SectorCausesExplorer lang={lang} />
@@ -1099,6 +1187,7 @@ export default function App() {
           })}
         </div>
       </footer>
+      <OfflineIndicator lang={lang} />
     </div>
   );
 }

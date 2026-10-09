@@ -1,8 +1,10 @@
 {
-  "name": "Observatoire Climatique Mondial | Global Climate Observatory",
-  "short_name": "Climat Observatoire",
-  "description": "Observatoire scientifique du réchauffement climatique, de la déforestation mondiale, des actions du WWF et des politiques climatiques par pays.",
+  "id": "/",
+  "name": "Observatoire Climatique Mondial — Global Climate Observatory",
+  "short_name": "ObsClimat",
+  "description": "Observatoire scientifique du réchauffement climatique en direct, Planète Terre 3D, déforestation mondiale, actions du WWF et plantation d'arbres.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#F8FAFC",
   "theme_color": "#0F172A",
@@ -16,29 +18,38 @@
     {
       "src": "/favicon-48x48.png",
       "sizes": "48x48",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/favicon-96x96.png",
       "sizes": "96x96",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/favicon-144x144.png",
       "sizes": "144x144",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/favicon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/favicon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/logo.svg",
