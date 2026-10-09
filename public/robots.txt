@@ -1,2 +1,13 @@
 User-agent: *
 Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Google-Favicon
+Allow: /
+
+Sitemap: https://observatoire-climatique-mondial.ecologia.workers.dev/sitemap.xml

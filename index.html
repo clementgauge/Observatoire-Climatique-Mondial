@@ -14,16 +14,23 @@
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="theme-color" content="#0F172A" />
 
-    <!-- Favicon & Web App Manifest -->
+    <!-- Favicon & Web App Manifest (Google Search Console & Google Favicon 48px-multiple compliant) -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48 32x32 16x16" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/logo.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
 
-    <!-- Canonical & Hreflang Internationalization — Pre-populated for static crawlers & dynamically bound to active domain -->
-    <link rel="canonical" id="canonical-link" href="https://observatoire-climatique-mondial.workers.dev/" />
-    <link rel="alternate" hreflang="fr" id="hreflang-fr" href="https://observatoire-climatique-mondial.workers.dev/" />
-    <link rel="alternate" hreflang="en" id="hreflang-en" href="https://observatoire-climatique-mondial.workers.dev/en" />
-    <link rel="alternate" hreflang="x-default" id="hreflang-default" href="https://observatoire-climatique-mondial.workers.dev/" />
+    <!-- Canonical & Hreflang Internationalization — Bound to production domain observatoire-climatique-mondial.ecologia.workers.dev -->
+    <link rel="canonical" id="canonical-link" href="https://observatoire-climatique-mondial.ecologia.workers.dev/" />
+    <link rel="alternate" hreflang="fr" id="hreflang-fr" href="https://observatoire-climatique-mondial.ecologia.workers.dev/" />
+    <link rel="alternate" hreflang="en" id="hreflang-en" href="https://observatoire-climatique-mondial.ecologia.workers.dev/en" />
+    <link rel="alternate" hreflang="x-default" id="hreflang-default" href="https://observatoire-climatique-mondial.ecologia.workers.dev/" />
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
 
     <!-- OpenGraph Social Cards -->
@@ -31,10 +38,10 @@
     <meta property="og:site_name" content="Observatoire Climatique Mondial" />
     <meta property="og:title" id="og-title" content="Observatoire Climatique Mondial — Climat &amp; Données en Direct" />
     <meta property="og:description" id="og-desc" content="Observatoire Climatique Mondial : données en direct (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays." />
-    <meta property="og:url" id="og-url" content="https://observatoire-climatique-mondial.workers.dev/" />
-    <meta property="og:image" content="https://observatoire-climatique-mondial.workers.dev/og-climate-observatory.svg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:url" id="og-url" content="https://observatoire-climatique-mondial.ecologia.workers.dev/" />
+    <meta property="og:image" content="https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
     <meta property="og:image:alt" content="Observatoire Climatique Mondial — Données CO2, Anomalie Thermique, Déforestation &amp; Biodiversité WWF" />
     <meta property="og:locale" id="og-locale" content="fr_FR" />
     <meta property="og:locale:alternate" content="en_US" />
@@ -43,7 +50,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" id="tw-title" content="Observatoire Climatique Mondial — Climat &amp; Données en Direct" />
     <meta name="twitter:description" id="tw-desc" content="Observatoire Climatique Mondial : données en direct (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays." />
-    <meta name="twitter:image" content="https://observatoire-climatique-mondial.workers.dev/og-climate-observatory.svg" />
+    <meta name="twitter:image" content="https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png" />
     <meta name="twitter:image:alt" content="Observatoire Climatique Mondial — Global Climate Observatory" />
 
     <!-- Early synchronous domain resolver so crawlers immediately inspect the real production host (e.g. workers.dev) -->
@@ -72,24 +79,43 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Schema.org Structured Data (JSON-LD): WebSite + Dataset + FAQPage + BreadcrumbList for Google Rich Snippets -->
+    <!-- Schema.org Structured Data (JSON-LD): Organization Logo + WebSite + Dataset + FAQPage + BreadcrumbList -->
     <script type="application/ld+json" id="schema-jsonld">
       {
         "@context": "https://schema.org",
         "@graph": [
           {
+            "@type": "Organization",
+            "@id": "https://observatoire-climatique-mondial.ecologia.workers.dev/#organization",
+            "name": "Observatoire Climatique Mondial",
+            "alternateName": "Global Climate Observatory",
+            "url": "https://observatoire-climatique-mondial.ecologia.workers.dev/",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png",
+              "contentUrl": "https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png",
+              "width": 512,
+              "height": 512
+            },
+            "image": "https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png"
+          },
+          {
             "@type": "WebSite",
+            "@id": "https://observatoire-climatique-mondial.ecologia.workers.dev/#website",
             "name": "Observatoire Climatique Mondial",
             "alternateName": [
               "Global Climate Observatory",
               "Observatoire Climatique Mondial — Global Climate Observatory"
             ],
-            "url": "https://observatoire-climatique-mondial.workers.dev/",
+            "url": "https://observatoire-climatique-mondial.ecologia.workers.dev/",
+            "publisher": {
+              "@id": "https://observatoire-climatique-mondial.ecologia.workers.dev/#organization"
+            },
             "inLanguage": ["fr-FR", "en-US"],
             "description": "Observatoire Climatique Mondial : données en direct (NOAA, NASA, GIEC), causes du réchauffement, déforestation, actions WWF et lois climat par pays.",
             "potentialAction": {
               "@type": "SearchAction",
-              "target": "https://observatoire-climatique-mondial.workers.dev/?country={search_term_string}",
+              "target": "https://observatoire-climatique-mondial.ecologia.workers.dev/?country={search_term_string}",
               "query-input": "required name=search_term_string"
             }
           },
@@ -114,13 +140,13 @@
                 "@type": "ListItem",
                 "position": 1,
                 "name": "Observatoire Climatique Mondial (FR)",
-                "item": "https://observatoire-climatique-mondial.workers.dev/"
+                "item": "https://observatoire-climatique-mondial.ecologia.workers.dev/"
               },
               {
                 "@type": "ListItem",
                 "position": 2,
                 "name": "Global Climate Observatory (EN)",
-                "item": "https://observatoire-climatique-mondial.workers.dev/en"
+                "item": "https://observatoire-climatique-mondial.ecologia.workers.dev/en"
               }
             ]
           },

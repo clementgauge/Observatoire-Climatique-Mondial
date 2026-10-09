@@ -27,6 +27,15 @@ function buildRobotsTxt(origin: string): string {
   return `User-agent: *
 Allow: /
 
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Google-Favicon
+Allow: /
+
 Sitemap: ${cleanOrigin}/sitemap.xml
 `;
 }
@@ -72,7 +81,7 @@ export default {
       });
     }
 
-    // 3. Dynamic robots.txt with exact domain
+    // 3. Dynamic robots.txt with explicit Google-Favicon & Googlebot-Image rules
     if (pathname === '/robots.txt') {
       const robots = buildRobotsTxt(origin);
       return new Response(request.method === 'HEAD' ? null : robots, {
@@ -113,9 +122,16 @@ export default {
       }
     }
 
-    // 6. Serve static assets from ./dist, with SPA fallback to /index.html on 404
+    // 6. Serve static assets from ./dist, with SPA fallback to /index.html on 404 (except missing image/icon extensions)
     const assetResponse = await env.ASSETS.fetch(request);
-    if (assetResponse.status === 404) {
+    if (
+      assetResponse.status === 404 &&
+      !pathname.endsWith('.ico') &&
+      !pathname.endsWith('.png') &&
+      !pathname.endsWith('.svg') &&
+      !pathname.endsWith('.xml') &&
+      !pathname.endsWith('.txt')
+    ) {
       const indexUrl = new URL('/index.html', request.url);
       return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
     }

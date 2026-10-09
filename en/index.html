@@ -14,16 +14,23 @@
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="theme-color" content="#0F172A" />
 
-    <!-- Favicon & Web App Manifest -->
+    <!-- Favicon & Web App Manifest (Google Search Console & Google Favicon 48px-multiple compliant) -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48 32x32 16x16" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/logo.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <!-- Canonical & Hreflang Internationalization -->
-    <link rel="canonical" id="canonical-link" href="https://observatoire-climatique-mondial.workers.dev/en" />
-    <link rel="alternate" hreflang="fr" id="hreflang-fr" href="https://observatoire-climatique-mondial.workers.dev/" />
-    <link rel="alternate" hreflang="en" id="hreflang-en" href="https://observatoire-climatique-mondial.workers.dev/en" />
-    <link rel="alternate" hreflang="x-default" id="hreflang-default" href="https://observatoire-climatique-mondial.workers.dev/" />
+    <link rel="canonical" id="canonical-link" href="https://observatoire-climatique-mondial.ecologia.workers.dev/en" />
+    <link rel="alternate" hreflang="fr" id="hreflang-fr" href="https://observatoire-climatique-mondial.ecologia.workers.dev/" />
+    <link rel="alternate" hreflang="en" id="hreflang-en" href="https://observatoire-climatique-mondial.ecologia.workers.dev/en" />
+    <link rel="alternate" hreflang="x-default" id="hreflang-default" href="https://observatoire-climatique-mondial.ecologia.workers.dev/" />
     <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml" />
 
     <!-- OpenGraph Social Cards -->
@@ -31,10 +38,10 @@
     <meta property="og:site_name" content="Global Climate Observatory" />
     <meta property="og:title" id="og-title" content="Global Climate Observatory — Real-Time Climate &amp; Warming Data" />
     <meta property="og:description" id="og-desc" content="Global Climate Observatory: real-time climate data (NOAA, NASA, IPCC), global warming causes, deforestation, WWF wildlife protection &amp; country laws." />
-    <meta property="og:url" id="og-url" content="https://observatoire-climatique-mondial.workers.dev/en" />
-    <meta property="og:image" content="https://observatoire-climatique-mondial.workers.dev/og-climate-observatory.svg" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:url" id="og-url" content="https://observatoire-climatique-mondial.ecologia.workers.dev/en" />
+    <meta property="og:image" content="https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
     <meta property="og:image:alt" content="Global Climate Observatory — Real-Time CO2, Temperature Anomaly, Deforestation &amp; WWF Biodiversity" />
     <meta property="og:locale" id="og-locale" content="en_US" />
     <meta property="og:locale:alternate" content="fr_FR" />
@@ -43,7 +50,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" id="tw-title" content="Global Climate Observatory — Real-Time Climate &amp; Warming Data" />
     <meta name="twitter:description" id="tw-desc" content="Global Climate Observatory: real-time climate data (NOAA, NASA, IPCC), global warming causes, deforestation, WWF wildlife protection &amp; country laws." />
-    <meta name="twitter:image" content="https://observatoire-climatique-mondial.workers.dev/og-climate-observatory.svg" />
+    <meta name="twitter:image" content="https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png" />
     <meta name="twitter:image:alt" content="Global Climate Observatory — Observatoire Climatique Mondial" />
 
     <!-- Early synchronous domain resolver -->
@@ -77,12 +84,32 @@
         "@context": "https://schema.org",
         "@graph": [
           {
+            "@type": "Organization",
+            "@id": "https://observatoire-climatique-mondial.ecologia.workers.dev/#organization",
+            "name": "Global Climate Observatory",
+            "alternateName": "Observatoire Climatique Mondial",
+            "url": "https://observatoire-climatique-mondial.ecologia.workers.dev/en",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png",
+              "contentUrl": "https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png",
+              "width": 512,
+              "height": 512
+            },
+            "image": "https://observatoire-climatique-mondial.ecologia.workers.dev/logo.png"
+          },
+          {
             "@type": "WebSite",
+            "@id": "https://observatoire-climatique-mondial.ecologia.workers.dev/#website-en",
             "name": "Global Climate Observatory",
             "alternateName": [
               "Observatoire Climatique Mondial",
               "Global Climate Observatory — Observatoire Climatique Mondial"
             ],
+            "url": "https://observatoire-climatique-mondial.ecologia.workers.dev/en",
+            "publisher": {
+              "@id": "https://observatoire-climatique-mondial.ecologia.workers.dev/#organization"
+            },
             "inLanguage": ["en-US", "fr-FR"],
             "description": "Scientific observatory on climate disruption: real-time NOAA, NASA GISS, Copernicus, and IPCC data, global warming causes by sector, tropical deforestation, WWF wildlife conservation, and climate policies across the world."
           },
